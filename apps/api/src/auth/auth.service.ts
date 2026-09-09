@@ -3,11 +3,13 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { permissionKey } from './permission.constant.js';
 
 export type AuthenticatedUser = {
   id: string;
   loginId: string;
   fullName: string;
+  permissions: string[];
 };
 
 @Injectable()
@@ -19,7 +21,10 @@ export class AuthService {
   ) {}
 
   async login(loginId: string, password: string, ipAddress?: string) {
-    const user = await this.prisma.user.findUnique({ where: { loginId } });
+    const user = await this.prisma.user.findUnique({
+      where: { loginId },
+      include: { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } },
+    });
 
     if (!user || !user.active) {
       await this.audit.log({
@@ -45,10 +50,19 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    const permissions = Array.from(
+      new Set(
+        user.roles.flatMap((userRole) =>
+          userRole.role.permissions.map((rp) => permissionKey(rp.permission.module, rp.permission.action)),
+        ),
+      ),
+    );
+
     const authenticatedUser: AuthenticatedUser = {
       id: user.id,
       loginId: user.loginId,
       fullName: user.fullName,
+      permissions,
     };
 
     const accessToken = await this.jwt.signAsync(authenticatedUser);

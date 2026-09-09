@@ -8,6 +8,10 @@ import { AuthModule } from './auth/auth.module.js';
 import { DepartmentsModule } from './departments/departments.module.js';
 import { PositionsModule } from './positions/positions.module.js';
 import { AppointmentsModule } from './appointments/appointments.module.js';
+import { UsersModule } from './users/users.module.js';
+import { RolesModule } from './roles/roles.module.js';
+import { PlantillaModule } from './plantilla/plantilla.module.js';
+import { SalaryGradesModule } from './salary-grades/salary-grades.module.js';
 
 @Module({
   imports: [
@@ -19,6 +23,10 @@ import { AppointmentsModule } from './appointments/appointments.module.js';
     PositionsModule,
     EmployeesModule,
     AppointmentsModule,
+    UsersModule,
+    RolesModule,
+    PlantillaModule,
+    SalaryGradesModule,
   ],
   controllers: [HealthController],
 })

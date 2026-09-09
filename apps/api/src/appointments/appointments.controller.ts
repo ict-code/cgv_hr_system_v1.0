@@ -1,12 +1,14 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { PermissionsGuard } from '../auth/permissions.guard.js';
+import { RequirePermissions } from '../auth/require-permissions.decorator.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import type { AuthenticatedUser } from '../auth/auth.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { AppointmentsService } from './appointments.service.js';
 import { RecordAppointmentChangeDto } from './dto/record-appointment-change.dto.js';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('employees/:employeeId')
 export class AppointmentsController {
   constructor(
@@ -29,6 +31,7 @@ export class AppointmentsController {
     return this.appointments.findServiceRecords(employeeId);
   }
 
+  @RequirePermissions('personnel:edit')
   @Post('appointments')
   async recordChange(
     @Param('employeeId') employeeId: string,

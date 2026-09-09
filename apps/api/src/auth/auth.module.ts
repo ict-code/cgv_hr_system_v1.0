@@ -6,6 +6,7 @@ import { AuthService } from './auth.service.js';
 import { AuthController } from './auth.controller.js';
 import { JwtStrategy } from './jwt.strategy.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { PermissionsGuard } from './permissions.guard.js';
 
 // Global: JwtAuthGuard (and the PassportModule/JwtModule providers it
 // depends on) is used by every feature module's controllers, not just
@@ -24,7 +25,7 @@ import { JwtAuthGuard } from './jwt-auth.guard.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtAuthGuard],
-  exports: [PassportModule, JwtAuthGuard],
+  providers: [AuthService, JwtStrategy, JwtAuthGuard, PermissionsGuard],
+  exports: [PassportModule, JwtAuthGuard, PermissionsGuard],
 })
 export class AuthModule {}

@@ -1,9 +1,20 @@
-import { Briefcase, Building2, Database, UserRound, type LucideIcon } from "lucide-react";
+import {
+  Banknote,
+  Briefcase,
+  Building2,
+  ClipboardList,
+  Database,
+  ShieldCheck,
+  UserCog,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  requiredPermission?: string;
 }
 
 export interface NavSection {
@@ -20,6 +31,16 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Departments", href: "/departments", icon: Building2 },
       { label: "Positions", href: "/positions", icon: Briefcase },
+      { label: "Plantilla", href: "/plantilla", icon: ClipboardList },
+      { label: "Salary Grades", href: "/salary-grades", icon: Banknote },
+    ],
+  },
+  {
+    title: "Administration",
+    icon: ShieldCheck,
+    items: [
+      { label: "Users", href: "/users", icon: UserCog, requiredPermission: "users:view" },
+      { label: "Roles", href: "/roles", icon: ShieldCheck, requiredPermission: "roles:view" },
     ],
   },
 ];

@@ -5,6 +5,7 @@ export type CurrentUser = {
   id: string;
   loginId: string;
   fullName: string;
+  permissions: string[];
 };
 
 export function useCurrentUser() {

@@ -86,3 +86,51 @@ export type EmployeeDetail = Employee & {
   changeLogs: AppointmentChangeLog[];
   serviceRecords: ServiceRecord[];
 };
+
+export type Permission = {
+  id: string;
+  module: string;
+  action: string;
+};
+
+export type Role = {
+  id: string;
+  name: string;
+  description: string | null;
+  permissions: { permission: Permission }[];
+};
+
+export type UserRow = {
+  id: string;
+  loginId: string;
+  fullName: string;
+  active: boolean;
+  roles: { role: Role }[];
+};
+
+export type Plantilla = {
+  id: string;
+  itemNo: string;
+  departmentId: string;
+  positionId: string | null;
+  department?: Department | null;
+  position?: Position | null;
+  actualSalary: string | null;
+  authSalary: string | null;
+  grade: number | null;
+  step: number | null;
+  partTime: boolean;
+};
+
+export type SalaryStep = {
+  id: string;
+  stepNo: number;
+  amount: string;
+  monthlyRate: string;
+};
+
+export type SalaryGrade = {
+  id: string;
+  gradeNo: number;
+  steps: SalaryStep[];
+};

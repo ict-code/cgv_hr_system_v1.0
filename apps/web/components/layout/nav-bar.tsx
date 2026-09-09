@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { NAV_SECTIONS, type NavSection } from "./nav-config";
 
 function isSectionActive(section: NavSection, pathname: string): boolean {
@@ -13,6 +14,7 @@ function isSectionActive(section: NavSection, pathname: string): boolean {
 
 export function NavBar() {
   const pathname = usePathname();
+  const { data: user } = useCurrentUser();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [lastPathname, setLastPathname] = useState(pathname);
   const navRef = useRef<HTMLElement>(null);
@@ -32,10 +34,16 @@ export function NavBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const permissions = user?.permissions ?? [];
+  const sections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !item.requiredPermission || permissions.includes(item.requiredPermission)),
+  })).filter((section) => section.items.length > 0);
+
   return (
     <nav ref={navRef} className="relative flex h-11 border-b border-[var(--color-border)] bg-white px-4">
       <div className="mx-auto flex w-full max-w-[1400px] items-center gap-1">
-        {NAV_SECTIONS.map((section) => {
+        {sections.map((section) => {
           const key = section.title ?? section.items[0].href;
           const active = isSectionActive(section, pathname);
           const Icon = section.icon;
