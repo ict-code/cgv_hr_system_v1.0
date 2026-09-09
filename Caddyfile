@@ -1,0 +1,11 @@
+# LAN-IP-only config (no domain yet, OQ-46 still open) — plain HTTP, no automatic TLS.
+:80 {
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

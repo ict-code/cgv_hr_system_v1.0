@@ -1,0 +1,548 @@
+// EGAPS Modern — Prisma schema, Personnel (ePMIS) module scaffold.
+//
+// Field-level source of truth: real schema pulled directly from the live production
+// databases on 2026-09-09 (see legacy_db/schema_dump*.txt), not the earlier
+// code-inferred version — see docs/legacy/DATABASE_SCHEMA.md and
+// docs/modernization/DATA_MIGRATION_ANALYSIS.md for full provenance and rationale.
+//
+// Legacy EXTENT arrays (Personal.Child-Name[15]/Child-Age[15]) are normalized into
+// real relations here (Dependent), not carried forward as arrays/JSON, since they're
+// genuinely relational data — DATA_MIGRATION_ANALYSIS.md §6.
+//
+// This is a structural scaffold only: models + a first migration. No data migration
+// script, no CRUD logic yet — see the approved plan.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums — replacing legacy character-coded status fields with real types.
+// Values confirmed from live production data (2026-09-09), not guessed.
+// ---------------------------------------------------------------------------
+
+/// Confirmed real values from the live `appointstatus` lookup table.
+enum AppointmentStatus {
+  AP // Appointed
+  CT // Co-Terminous
+  DT // Death
+  EL // Elected
+  FT // Full Time to Part Time
+  NE // New
+  OA // Original Appointment
+  PR // Promotion
+  PX // Promotion Ext
+  RA // Reappointment
+  RC // Reclass
+  RI // Reinstated
+  RM // Re-employment
+  RN // Renewal
+  RS // Resigned
+  RT // Retired
+  SA // Salary Adjustment
+  TM // Temporary Appointment
+  TN // Transfer (entry)
+  TO // Transfer Out
+  TX // Transfer Dept
+}
+
+/// From Appointment.Emp-Status (PERSONNEL_ANALYSIS.md §2): 1=Regular..6=Devolved.
+enum EmploymentStatus {
+  REGULAR
+  CASUAL
+  CONTRACTUAL
+  CO_TERMINOUS
+  PROBATIONARY
+  DEVOLVED
+}
+
+/// From Appointment.Pay-Mode: 1=Daily, 2=Weekly, 3=Semi-Monthly, 4=Monthly.
+enum PayMode {
+  DAILY
+  WEEKLY
+  SEMI_MONTHLY
+  MONTHLY
+}
+
+/// From Appointment.Work-Level: 1=First Level, 2=Second Level, 3=Third Level (CSC classification).
+enum WorkLevel {
+  FIRST_LEVEL
+  SECOND_LEVEL
+  THIRD_LEVEL
+}
+
+/// Appointment.appoint-type: regular / casual / job order / contract-of-service, etc.
+/// Confirmed multiple employment-type payroll variants exist (PAYROLL_ANALYSIS.md) —
+/// exact numeric-to-label mapping to be finalized against real data before go-live.
+enum AppointType {
+  REGULAR
+  CASUAL
+  JOB_ORDER
+  CONTRACT_OF_SERVICE
+  CONSULTANT
+  SPECIAL
+}
+
+// ---------------------------------------------------------------------------
+// Master data
+// ---------------------------------------------------------------------------
+
+model Department {
+  id              String   @id @default(cuid())
+  deptCode        Int      @unique // legacy Dept-Code
+  deptDesc        String
+  shortDesc       String?
+  deptHead        String?
+  certifyName     String? // legacy Certify-Name — printed-document signatory, not a live approval gate (PAYROLL_ANALYSIS.md §11)
+  certifyPosition String?
+  approveName     String? // legacy Approve-Name — same caveat
+  approvePosition String?
+  fundCode        Int?
+  subCode         String?
+  refCode         String?
+
+  divisions    Division[]
+  employees    Employee[]
+  appointments Appointment[]
+  plantillas   Plantilla[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
+}
+
+model Division {
+  id           String   @id @default(cuid())
+  divCode      Int      @unique
+  divDesc      String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("divisions")
+}
+
+model Position {
+  id            String  @id @default(cuid())
+  positionCode  Int     @unique // legacy Position-Code
+  positionDesc  String
+  shortDesc     String?
+  positionGroup Int?    // legacy pGroup-Code
+
+  appointments Appointment[]
+  plantillas   Plantilla[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("positions")
+}
+
+model Plantilla {
+  id           String   @id @default(cuid())
+  itemNo       String   @unique // legacy Item-No — DBM-prescribed plantilla identifier, preserved unchanged (DATA_MIGRATION_ANALYSIS.md §5)
+  oldItemNo    String?
+  pageNo       Int?
+  actualSalary Decimal? @db.Decimal(14, 2)
+  authSalary   Decimal? @db.Decimal(14, 2)
+  grade        Int?
+  step         Int?
+  partTime     Boolean  @default(false)
+
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  positionId   String?
+  position     Position?  @relation(fields: [positionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("plantillas")
+}
+
+model SalaryGrade {
+  id      String @id @default(cuid())
+  gradeNo Int    @unique // legacy sgrade-no
+
+  steps         SalaryStep[]
+  effectivities SalaryGradeEffectivity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("salary_grades")
+}
+
+/// Normalizes the legacy SGrade.amount[10]/monthly-rate[10] EXTENT arrays
+/// (one entry per step 1-10) into real rows.
+model SalaryStep {
+  id            String  @id @default(cuid())
+  salaryGradeId String
+  salaryGrade   SalaryGrade @relation(fields: [salaryGradeId], references: [id])
+  stepNo        Int // 1-10
+  amount        Decimal @db.Decimal(14, 2)
+  monthlyRate   Decimal @db.Decimal(14, 2)
+
+  @@unique([salaryGradeId, stepNo])
+  @@map("salary_steps")
+}
+
+model SalaryGradeEffectivity {
+  id            String   @id @default(cuid())
+  effectDate    DateTime
+  salaryGradeId String
+  salaryGrade   SalaryGrade @relation(fields: [salaryGradeId], references: [id])
+  description   String?
+
+  createdAt DateTime @default(now())
+
+  @@map("salary_grade_effectivities")
+}
+
+// ---------------------------------------------------------------------------
+// Personnel core
+// ---------------------------------------------------------------------------
+
+model Employee {
+  id     String @id @default(cuid())
+  empNo  Int    @unique // legacy Emp-No — preserved unchanged, the universal join key (DATA_MIGRATION_ANALYSIS.md §5)
+
+  lastName   String
+  firstName  String
+  middleName String?
+  suffix     String?
+
+  birthDate  DateTime?
+  birthPlace String?
+  sex        String? // legacy free-text "Male"/"Female" default — revisit as enum once full value set confirmed
+  civilStatus String?
+  nationality String  @default("Filipino")
+
+  fatherName  String?
+  motherName  String?
+  spouseName  String?
+  spouseWork  String?
+
+  // Government-issued identifiers — never transformed, per DATA_MIGRATION_ANALYSIS.md §5
+  tin           String?
+  gsisNo        String?
+  pagibigNo     String?
+  philhealthNo  String?
+
+  address      String?
+  telNo        String?
+  cellNo       String?
+  emailAddress String?
+  bankAccountNo String?
+
+  taxStatus String? // legacy Tax-Status — full BIR code table still pending, OQ-43/OQ-28
+
+  dateHired      DateTime?
+  hiredDate      DateTime? // legacy carries both Hired-Date and date-hired distinctly — kept separate pending clarification
+  appointDate    DateTime?
+
+  inactive         Boolean   @default(false)
+  dateInactivated  DateTime?
+  inactiveCause    String?
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+
+  dependents    Dependent[]
+  appointments  Appointment[]
+  changeLogs    AppointmentChangeLog[]
+  serviceRecords ServiceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employees")
+}
+
+/// Normalizes legacy Personal.Child-Name[15]/Child-Age[15] EXTENT arrays into
+/// real relational rows — DATA_MIGRATION_ANALYSIS.md §6.
+model Dependent {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  name       String
+  birthDate  DateTime?
+  age        Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("dependents")
+}
+
+/// Appointment — the effective-dated "current state" layer of the confirmed
+/// three-layer personnel history model (PERSONNEL_ANALYSIS.md §2, §6).
+/// Deliberately NOT unique per employee — the legacy schema allows (and the
+/// live analysis confirmed, in a small number of cases) more than one row per
+/// employee; resolution rule for that edge case is a migration-time decision
+/// (OQ-42), not a schema-level constraint here.
+model Appointment {
+  id String @id @default(cuid())
+
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  positionId   String?
+  position     Position?   @relation(fields: [positionId], references: [id])
+
+  itemNo String? // legacy Item-No — plantilla item, preserved unchanged
+
+  status           AppointmentStatus?
+  employmentStatus EmploymentStatus?
+  appointType      AppointType?
+  payMode          PayMode?
+  workLevel        WorkLevel?
+
+  authSalary  Decimal? @db.Decimal(14, 2)
+  actualSalary Decimal? @db.Decimal(14, 2)
+  monthlyRate Decimal? @db.Decimal(14, 2)
+
+  effectDate DateTime?
+  startDate  DateTime?
+  endDate    DateTime?
+  exitDate   DateTime?
+  exitCause  String?
+
+  stepNo Int?
+  grade  Int?
+  rank   Int?
+
+  taxStatus String?
+  withTax   Decimal? @db.Decimal(14, 2)
+
+  repAllowance     Decimal? @db.Decimal(14, 2)
+  travelAllowance  Decimal? @db.Decimal(14, 2)
+  subsAllowance    Decimal? @db.Decimal(14, 2)
+  laundryAllowance Decimal? @db.Decimal(14, 2)
+  quarterAllowance Decimal? @db.Decimal(14, 2)
+
+  pagibigRate Decimal? @db.Decimal(14, 2)
+  coopRate    Decimal? @db.Decimal(14, 2)
+
+  // Legacy "without X deduction" exemption flags — confirmed real fields,
+  // BUSINESS_RULES.md BR-001/BR-004 consume these during payroll calculation.
+  woGsis       Boolean @default(false)
+  woPagibig    Boolean @default(false)
+  woPhilhealth Boolean @default(false)
+  woWtax       Boolean @default(false)
+  woPera       Boolean @default(false)
+  woCaa        Boolean @default(false)
+  woCoop       Boolean @default(false)
+  woSif        Boolean @default(false)
+  exemptPagibig Boolean @default(false)
+
+  withRata  Boolean @default(false)
+  vouchered Boolean @default(false)
+  partTime  Boolean @default(false)
+  partTimePercent Decimal? @db.Decimal(5, 2)
+
+  vlBalance Decimal? @db.Decimal(10, 2)
+  slBalance Decimal? @db.Decimal(10, 3)
+
+  /// Legacy sMode: 1=active, 2=inactive — CONFIRMED derived from which
+  /// AppointmentStatus is set (PERSONNEL_ANALYSIS.md §5, real appointstatus
+  /// query 2026-09-09), not independently maintained. Kept here for direct
+  /// migration fidelity; application logic should derive it, not set it directly.
+  sMode Int?
+
+  groupNo      Int?
+  assignCode   Int?
+  localityCode Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([employeeId, effectDate])
+  @@index([departmentId, itemNo])
+  @@map("appointments")
+}
+
+/// The confirmed append-only audit-trail layer — full before/after snapshot
+/// per appointment change, including a performance rating at time of change.
+/// PERSONNEL_ANALYSIS.md §2; CHGAPP.P lines 79-164.
+model AppointmentChangeLog {
+  id String @id @default(cuid())
+
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  year       Int
+  effectDate DateTime
+
+  // "Old" snapshot — captured before the change was applied.
+  oldDeptCode     Int?
+  oldPositionCode Int?
+  oldActlSalary   Decimal? @db.Decimal(14, 2)
+  oldMonthlyRate  Decimal? @db.Decimal(14, 2)
+  oldItemNo       String?
+  oldStatusCode   String?
+  oldEmpStatus    String?
+  oldGrade        Int?
+  oldStep         Int?
+
+  // "New" values as of this change.
+  deptCode     Int?
+  positionCode Int?
+  actlSalary   Decimal? @db.Decimal(14, 2)
+  monthlyRate  Decimal? @db.Decimal(14, 2)
+  itemNo       String?
+  statusCode   String?
+  empStatus    String?
+  grade        Int?
+  step         Int?
+
+  /// Legacy Efficient-Rate: 1=Excellent .. 5=Unsatisfactory (CHGAPP.P line 48-51).
+  efficiencyRate Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([employeeId, year, effectDate])
+  @@map("appointment_change_logs")
+}
+
+/// The confirmed chained, gapless service-history layer.
+/// PERSONNEL_ANALYSIS.md §2, §6; legacy ServiceRecord table.
+model ServiceRecord {
+  id String @id @default(cuid())
+
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  startDate DateTime
+  endDate   DateTime?
+
+  // Legacy stores these as denormalized text snapshots at time of record,
+  // not live FKs — preserved as-is since it's historical record, not current state.
+  positionSnapshot   String?
+  departmentSnapshot String?
+  divisionSnapshot   String?
+  empStatusSnapshot  String?
+  salarySnapshot     Decimal? @db.Decimal(14, 2)
+  salaryUnitSnapshot String?
+  grade              Int?
+  step               Int?
+  itemNo             String?
+
+  exitDate  DateTime?
+  exitCause String?
+
+  leaveAbsence String?
+  remarks      String?
+  signatory       String?
+  signPosition    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([employeeId, startDate])
+  @@map("service_records")
+}
+
+// ---------------------------------------------------------------------------
+// Cross-cutting: RBAC and audit (FR-026 / FR-027)
+// Modeled fresh per MODERNIZATION_BOUNDARY.md — the legacy module+action-level
+// permission concept is worth preserving, the exact au-chkaccess.p DB-driven
+// mechanism is not replicated 1:1.
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  loginId      String   @unique
+  passwordHash String
+  fullName     String
+  active       Boolean  @default(true)
+
+  employeeId String? @unique
+  // Optional link to an Employee record — not every system user is necessarily
+  // an employee row (e.g. a superadmin account), so this stays nullable.
+
+  roles     UserRole[]
+  auditLogs AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+
+  users       UserRole[]
+  permissions RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id     String @id @default(cuid())
+  module String // e.g. "personnel", "attendance", "payroll"
+  action String // e.g. "view", "create", "edit", "delete", "approve"
+
+  roles RolePermission[]
+
+  @@unique([module, action])
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id])
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+/// Replicates the legacy Audit-Hdr concept: who/when/where/module/action/outcome
+/// (SECURITY_ANALYSIS.md §6) — a genuinely strong existing capability worth
+/// preserving, not a legacy weakness.
+model AuditLog {
+  id String @id @default(cuid())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  module      String
+  action      String
+  description String
+  outcome     String // e.g. "success", "denied"
+  ipAddress   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([module, createdAt])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}

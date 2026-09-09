@@ -1,0 +1,15 @@
+{
+  "name": "egaps-modern",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter api start:dev",
+    "dev:web": "pnpm --filter web dev",
+    "db:generate": "pnpm --filter db exec prisma generate",
+    "db:migrate": "pnpm --filter db exec prisma migrate dev",
+    "db:studio": "pnpm --filter db exec prisma studio"
+  }
+}
