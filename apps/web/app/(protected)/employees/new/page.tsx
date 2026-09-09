@@ -5,8 +5,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiFetch } from "../../../../lib/api";
-import type { Department, Employee } from "../../../../lib/types";
+import { apiFetch } from "@/lib/api";
+import type { Department, Employee } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 
 const employeeSchema = z.object({
   empNo: z.coerce.number().int().positive(),
@@ -23,7 +28,7 @@ type EmployeeForm = z.infer<typeof employeeSchema>;
 export default function NewEmployeePage() {
   const router = useRouter();
   const departments = useQuery({
-    queryKey: ["departments"],
+    queryKey: ["/departments"],
     queryFn: () => apiFetch<Department[]>("/departments"),
   });
 
@@ -49,77 +54,76 @@ export default function NewEmployeePage() {
 
   return (
     <div className="max-w-lg">
-      <h1 className="text-xl font-semibold mb-4">New employee</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle>New employee</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            onSubmit={handleSubmit((values) => createEmployee.mutate(values))}
+            className="flex flex-col gap-3"
+          >
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="empNo">Employee no.</Label>
+              <Input id="empNo" {...register("empNo")} />
+              {errors.empNo && <p className="text-sm text-[var(--color-danger)]">{errors.empNo.message}</p>}
+            </div>
 
-      <form
-        onSubmit={handleSubmit((values) => createEmployee.mutate(values))}
-        className="border rounded-lg p-4 flex flex-col gap-3"
-      >
-        <div className="flex gap-3">
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-sm font-medium">Employee no.</label>
-            <input className="border rounded px-3 py-2" {...register("empNo")} />
-            {errors.empNo && <p className="text-sm text-red-600">{errors.empNo.message}</p>}
-          </div>
-        </div>
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Label htmlFor="lastName">Last name</Label>
+                <Input id="lastName" {...register("lastName")} />
+                {errors.lastName && <p className="text-sm text-[var(--color-danger)]">{errors.lastName.message}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Label htmlFor="firstName">First name</Label>
+                <Input id="firstName" {...register("firstName")} />
+                {errors.firstName && <p className="text-sm text-[var(--color-danger)]">{errors.firstName.message}</p>}
+              </div>
+            </div>
 
-        <div className="flex gap-3">
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-sm font-medium">Last name</label>
-            <input className="border rounded px-3 py-2" {...register("lastName")} />
-            {errors.lastName && <p className="text-sm text-red-600">{errors.lastName.message}</p>}
-          </div>
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-sm font-medium">First name</label>
-            <input className="border rounded px-3 py-2" {...register("firstName")} />
-            {errors.firstName && <p className="text-sm text-red-600">{errors.firstName.message}</p>}
-          </div>
-        </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="middleName">Middle name</Label>
+              <Input id="middleName" {...register("middleName")} />
+            </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Middle name</label>
-          <input className="border rounded px-3 py-2" {...register("middleName")} />
-        </div>
+            <div className="flex gap-3">
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Label htmlFor="sex">Sex</Label>
+                <Select id="sex" {...register("sex")}>
+                  <option value="">—</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5 flex-1">
+                <Label htmlFor="civilStatus">Civil status</Label>
+                <Input id="civilStatus" {...register("civilStatus")} />
+              </div>
+            </div>
 
-        <div className="flex gap-3">
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-sm font-medium">Sex</label>
-            <select className="border rounded px-3 py-2" {...register("sex")}>
-              <option value="">—</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-1 flex-1">
-            <label className="text-sm font-medium">Civil status</label>
-            <input className="border rounded px-3 py-2" {...register("civilStatus")} />
-          </div>
-        </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="departmentId">Department</Label>
+              <Select id="departmentId" {...register("departmentId")}>
+                <option value="">—</option>
+                {departments.data?.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.deptDesc}
+                  </option>
+                ))}
+              </Select>
+            </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Department</label>
-          <select className="border rounded px-3 py-2" {...register("departmentId")}>
-            <option value="">—</option>
-            {departments.data?.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.deptDesc}
-              </option>
-            ))}
-          </select>
-        </div>
+            {createEmployee.isError && (
+              <p className="text-sm text-[var(--color-danger)]">{(createEmployee.error as Error).message}</p>
+            )}
 
-        {createEmployee.isError && (
-          <p className="text-sm text-red-600">{(createEmployee.error as Error).message}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={isSubmitting || createEmployee.isPending}
-          className="bg-black text-white rounded px-3 py-2 w-fit disabled:opacity-50"
-        >
-          {createEmployee.isPending ? "Creating…" : "Create employee"}
-        </button>
-      </form>
+            <Button type="submit" disabled={isSubmitting || createEmployee.isPending} className="mt-2 w-fit">
+              {createEmployee.isPending ? "Creating…" : "Create employee"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

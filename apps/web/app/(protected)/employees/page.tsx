@@ -1,45 +1,91 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { apiFetch } from "../../../lib/api";
-import type { Employee } from "../../../lib/types";
+import { useState } from "react";
+import { apiFetch } from "@/lib/api";
+import type { Employee } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableCard } from "@/components/ui/table-card";
 
 export default function EmployeesPage() {
+  const [search, setSearch] = useState("");
+
   const employees = useQuery({
     queryKey: ["employees"],
     queryFn: () => apiFetch<Employee[]>("/employees"),
   });
 
-  return (
-    <div className="flex flex-col gap-6 max-w-3xl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Employees</h1>
-        <Link href="/employees/new" className="bg-black text-white rounded px-3 py-2 text-sm">
-          New employee
-        </Link>
-      </div>
+  const rows = (employees.data ?? []).filter((e) => {
+    if (!search) return true;
+    const haystack = `${e.lastName} ${e.firstName} ${e.empNo}`.toLowerCase();
+    return haystack.includes(search.toLowerCase());
+  });
 
-      <div className="border rounded-lg divide-y">
-        {employees.isLoading && <p className="p-4">Loading…</p>}
-        {employees.isError && (
-          <p className="p-4 text-red-600">{(employees.error as Error).message}</p>
-        )}
-        {employees.data?.length === 0 && <p className="p-4 text-gray-500">No employees yet.</p>}
-        {employees.data?.map((e) => (
-          <Link
-            key={e.id}
-            href={`/employees/${e.id}`}
-            className="p-3 flex gap-3 hover:bg-gray-50"
-          >
-            <span className="text-gray-500 w-20">{e.empNo}</span>
-            <span>
-              {e.lastName}, {e.firstName}
-            </span>
-            {e.department && <span className="text-gray-400 ml-auto">{e.department.deptDesc}</span>}
-          </Link>
-        ))}
-      </div>
-    </div>
+  return (
+    <TableCard
+      title="Employees"
+      search={search}
+      onSearchChange={setSearch}
+      searchPlaceholder="Search name or employee no."
+      headerExtra={
+        <Link href="/employees/new">
+          <Button size="sm">
+            <Plus className="h-3.5 w-3.5" />
+            New employee
+          </Button>
+        </Link>
+      }
+    >
+      <Table bare>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Emp. No.</TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Department</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {employees.isLoading && (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
+                Loading…
+              </TableCell>
+            </TableRow>
+          )}
+          {employees.isError && (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center text-[var(--color-danger)]">
+                {(employees.error as Error).message}
+              </TableCell>
+            </TableRow>
+          )}
+          {!employees.isLoading && rows.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
+                No employees yet.
+              </TableCell>
+            </TableRow>
+          )}
+          {rows.map((e) => (
+            <TableRow key={e.id} className="cursor-pointer">
+              <TableCell>
+                <Link href={`/employees/${e.id}`} className="block text-brand-600 hover:underline">
+                  {e.empNo}
+                </Link>
+              </TableCell>
+              <TableCell>
+                <Link href={`/employees/${e.id}`} className="block">
+                  {e.lastName}, {e.firstName}
+                </Link>
+              </TableCell>
+              <TableCell className="text-[var(--color-muted)]">{e.department?.deptDesc ?? "—"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableCard>
   );
 }

@@ -1,10 +1,15 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const loginSchema = z.object({
   loginId: z.string().min(1, "Login ID is required"),
@@ -41,53 +46,37 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center p-8 font-sans">
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="border rounded-lg p-6 w-full max-w-sm flex flex-col gap-4"
-      >
-        <h1 className="text-xl font-semibold">EGAPS Modern — Sign in</h1>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="loginId" className="text-sm font-medium">
-            Login ID
-          </label>
-          <input
-            id="loginId"
-            type="text"
-            className="border rounded px-3 py-2"
-            {...register("loginId")}
-          />
-          {errors.loginId && (
-            <p className="text-sm text-red-600">{errors.loginId.message}</p>
-          )}
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="flex w-full max-w-sm flex-col items-center gap-6">
+        <div className="flex items-center gap-2.5">
+          <Image src="/vigan-seal.png" alt="City of Vigan seal" width={44} height={44} className="h-11 w-11" priority />
+          <div>
+            <p className="text-base font-semibold text-foreground">EGAPS Modern — Personnel</p>
+            <p className="text-xs text-[var(--color-muted)]">City Government of Vigan</p>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm font-medium">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            className="border rounded px-3 py-2"
-            {...register("password")}
-          />
-          {errors.password && (
-            <p className="text-sm text-red-600">{errors.password.message}</p>
-          )}
-        </div>
-
-        {serverError && <p className="text-sm text-red-600">{serverError}</p>}
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-black text-white rounded px-3 py-2 disabled:opacity-50"
-        >
-          {isSubmitting ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
-    </main>
+        <Card className="w-full">
+          <CardContent className="pt-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="loginId">Login ID</Label>
+                <Input id="loginId" autoFocus {...register("loginId")} />
+                {errors.loginId && <p className="text-sm text-[var(--color-danger)]">{errors.loginId.message}</p>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" type="password" {...register("password")} />
+                {errors.password && <p className="text-sm text-[var(--color-danger)]">{errors.password.message}</p>}
+              </div>
+              {serverError && <p className="text-sm text-[var(--color-danger)]">{serverError}</p>}
+              <Button type="submit" disabled={isSubmitting} className="mt-2">
+                {isSubmitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
