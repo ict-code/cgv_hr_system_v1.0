@@ -11,3 +11,4 @@ Thumbs.db
 .pnpm-store/
 packages/db/generated/
 *.tsbuildinfo
+apps/api/.test-db-data/
