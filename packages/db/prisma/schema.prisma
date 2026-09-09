@@ -410,6 +410,12 @@ model AppointmentChangeLog {
   /// Legacy Efficient-Rate: 1=Excellent .. 5=Unsatisfactory (CHGAPP.P line 48-51).
   efficiencyRate Int?
 
+  /// Who recorded this change — the legacy system had no equivalent (it only
+  /// captured a printed-document signatory, PAYROLL_ANALYSIS.md §11), this is
+  /// a deliberate improvement now that real auth exists.
+  changedByUserId String?
+  changedByUser   User?   @relation(fields: [changedByUserId], references: [id])
+
   createdAt DateTime @default(now())
 
   @@index([employeeId, year, effectDate])
@@ -473,6 +479,7 @@ model User {
 
   roles     UserRole[]
   auditLogs AuditLog[]
+  appointmentChanges AppointmentChangeLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

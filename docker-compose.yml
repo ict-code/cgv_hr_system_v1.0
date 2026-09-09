@@ -25,6 +25,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-egaps}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-egaps_modern}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       NODE_ENV: production
       PORT: "3001"
     depends_on:
