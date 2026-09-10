@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma, AppointmentStatusCode } from '@egaps/db';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateAppointmentStatusDto } from './dto/create-appointment-status.dto.js';
+import type { UpdateAppointmentStatusDto } from './dto/update-appointment-status.dto.js';
 import type { ListQueryDto, PaginatedResult } from '../common/dto/list-query.dto.js';
 
 @Injectable()
@@ -33,5 +34,13 @@ export class AppointmentStatusesService {
 
   create(dto: CreateAppointmentStatusDto) {
     return this.prisma.appointmentStatusCode.create({ data: dto });
+  }
+
+  update(id: string, dto: UpdateAppointmentStatusDto) {
+    return this.prisma.appointmentStatusCode.update({ where: { id }, data: dto });
+  }
+
+  remove(id: string) {
+    return this.prisma.appointmentStatusCode.delete({ where: { id } });
   }
 }

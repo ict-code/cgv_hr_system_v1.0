@@ -22,6 +22,8 @@ export const PERMISSION_CATALOG = [
   ['roles', 'create'],
   ['appointmentStatuses', 'view'],
   ['appointmentStatuses', 'create'],
+  ['appointmentStatuses', 'edit'],
+  ['appointmentStatuses', 'delete'],
 ] as const;
 
 export type Permission = `${(typeof PERMISSION_CATALOG)[number][0]}:${(typeof PERMISSION_CATALOG)[number][1]}`;

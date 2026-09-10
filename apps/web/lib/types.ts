@@ -27,6 +27,7 @@ export type AppointmentStatusCode = {
   id: string;
   code: string;
   description: string;
+  active: boolean;
 };
 
 export type Department = {
