@@ -13,6 +13,7 @@ import { RolesModule } from './roles/roles.module.js';
 import { PlantillaModule } from './plantilla/plantilla.module.js';
 import { SalaryGradesModule } from './salary-grades/salary-grades.module.js';
 import { PersonnelRecordsModule } from './personnel-records/personnel-records.module.js';
+import { AppointmentStatusesModule } from './appointment-statuses/appointment-statuses.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PersonnelRecordsModule } from './personnel-records/personnel-records.mo
     PlantillaModule,
     SalaryGradesModule,
     PersonnelRecordsModule,
+    AppointmentStatusesModule,
   ],
   controllers: [HealthController],
 })

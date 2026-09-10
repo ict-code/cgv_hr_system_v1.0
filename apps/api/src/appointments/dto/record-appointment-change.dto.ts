@@ -1,10 +1,4 @@
-import {
-  AppointmentStatus,
-  AppointType,
-  EmploymentStatus,
-  PayMode,
-  WorkLevel,
-} from '@egaps/db';
+import { AppointType, EmploymentStatus, PayMode, WorkLevel } from '@egaps/db';
 import { Type } from 'class-transformer';
 import {
   IsDate,
@@ -16,8 +10,11 @@ import {
 } from 'class-validator';
 
 export class RecordAppointmentChangeDto {
-  @IsEnum(AppointmentStatus)
-  status!: AppointmentStatus;
+  // Plain string, not an enum — see the AppointmentStatusCode model's doc
+  // comment in schema.prisma for why (real data carries codes the legacy
+  // system's own lookup table doesn't have).
+  @IsString()
+  status!: string;
 
   @IsDate()
   @Type(() => Date)

@@ -21,6 +21,8 @@ const PERMISSION_CATALOG = [
   ['users', 'edit'],
   ['roles', 'view'],
   ['roles', 'create'],
+  ['appointmentStatuses', 'view'],
+  ['appointmentStatuses', 'create'],
 ];
 
 const HR_STAFF_PERMISSIONS = new Set([
@@ -35,6 +37,8 @@ const HR_STAFF_PERMISSIONS = new Set([
   'plantilla:create',
   'salaryGrades:view',
   'salaryGrades:create',
+  'appointmentStatuses:view',
+  'appointmentStatuses:create',
 ]);
 
 const loginId = process.env.SEED_ADMIN_LOGIN_ID ?? 'admin';

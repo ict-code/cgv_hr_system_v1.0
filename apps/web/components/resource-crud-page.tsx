@@ -18,6 +18,15 @@ export type ResourceField = {
   required?: boolean;
 };
 
+// Naive `.replace(/s$/, "")` mangles "-es" plurals like "Statuses" ->
+// "Statuse". Handle the common English plural endings properly.
+function singularize(word: string): string {
+  if (/ies$/i.test(word)) return word.slice(0, -3) + "y";
+  if (/(ses|xes|zes|ches|shes)$/i.test(word)) return word.slice(0, -2);
+  if (/s$/i.test(word)) return word.slice(0, -1);
+  return word;
+}
+
 export type ResourceColumn<T> = {
   key: keyof T & string;
   label: string;
@@ -115,7 +124,7 @@ export function ResourceCrudPage<T extends { id: string }>({
         </Table>
       </TableCard>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={`New ${title.replace(/s$/, "")}`}>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={`New ${singularize(title)}`}>
         <form
           onSubmit={(e) => {
             e.preventDefault();

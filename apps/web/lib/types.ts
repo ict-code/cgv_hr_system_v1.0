@@ -16,6 +16,12 @@ export const EMPLOYMENT_STATUSES = [
   "REGULAR", "CASUAL", "CONTRACTUAL", "CO_TERMINOUS", "PROBATIONARY", "DEVOLVED",
 ] as const;
 
+export type AppointmentStatusCode = {
+  id: string;
+  code: string;
+  description: string;
+};
+
 export type Department = {
   id: string;
   deptCode: number;

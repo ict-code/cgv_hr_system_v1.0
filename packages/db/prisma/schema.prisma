@@ -27,30 +27,10 @@ datasource db {
 // Values confirmed from live production data (2026-09-09), not guessed.
 // ---------------------------------------------------------------------------
 
-/// Confirmed real values from the live `appointstatus` lookup table.
-enum AppointmentStatus {
-  AP // Appointed
-  CT // Co-Terminous
-  DT // Death
-  EL // Elected
-  FT // Full Time to Part Time
-  NE // New
-  OA // Original Appointment
-  PR // Promotion
-  PX // Promotion Ext
-  RA // Reappointment
-  RC // Reclass
-  RI // Reinstated
-  RM // Re-employment
-  RN // Renewal
-  RS // Resigned
-  RT // Retired
-  SA // Salary Adjustment
-  TM // Temporary Appointment
-  TN // Transfer (entry)
-  TO // Transfer Out
-  TX // Transfer Dept
-}
+// Appointment.status is a plain String, not an enum — see AppointmentStatusCode
+// below (Master Data section) for the full known-code catalog. Real production
+// data carries 12 codes beyond the 21 the live `appointstatus` lookup table
+// itself has, which ruled out a hard enum here.
 
 /// From Appointment.Emp-Status (PERSONNEL_ANALYSIS.md §2): 1=Regular..6=Devolved.
 enum EmploymentStatus {
@@ -77,9 +57,14 @@ enum WorkLevel {
   THIRD_LEVEL
 }
 
-/// Appointment.appoint-type: regular / casual / job order / contract-of-service, etc.
-/// Confirmed multiple employment-type payroll variants exist (PAYROLL_ANALYSIS.md) —
-/// exact numeric-to-label mapping to be finalized against real data before go-live.
+/// Appointment.appoint-type. CONFIRMED against real production data
+/// (2026-09-10, 1,188 real Appointment rows): only 3 of the 6 values below are
+/// ever actually used — 1=REGULAR (914 rows — covers Permanent/Appointed/
+/// Co-Terminous/Elected/Part-time/Substitute per the EmployType lookup table),
+/// 2=CASUAL (227 rows), 3=CONTRACT_OF_SERVICE (47 rows — legacy lumps
+/// Contractual/Job Order/Medical Contractual/Service Contract/Temporary all
+/// under this one code; JOB_ORDER/CONSULTANT/SPECIAL below are never
+/// distinguished at this field, kept for schema completeness only).
 enum AppointType {
   REGULAR
   CASUAL
@@ -116,6 +101,20 @@ model Department {
   updatedAt DateTime @updatedAt
 
   @@map("departments")
+}
+
+/// Legacy AppointStatus lookup table (Master Data > Appointment Status File).
+/// Not a hard FK from Appointment.status — informational/editable labels only,
+/// same as legacy itself (see Appointment.status's doc comment).
+model AppointmentStatusCode {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("appointment_status_codes")
 }
 
 model Division {
@@ -445,7 +444,12 @@ model Appointment {
 
   itemNo String? // legacy Item-No — plantilla item, preserved unchanged
 
-  status           AppointmentStatus?
+  // Plain string, not the AppointmentStatus enum — real production data (see
+  // AppointmentStatusCode below) carries 12 codes that exist in neither the
+  // enum nor even the legacy AppointStatus lookup table itself. Legacy itself
+  // has no enforced FK from Appointment.Status-Code to AppointStatus, which is
+  // exactly how those orphaned codes exist in the first place.
+  status           String?
   employmentStatus EmploymentStatus?
   appointType      AppointType?
   payMode          PayMode?

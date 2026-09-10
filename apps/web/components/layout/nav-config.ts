@@ -134,7 +134,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Offices File", href: "/departments", icon: Landmark },
       { label: "Positions File", href: "/positions", icon: Briefcase },
       { label: "Employment Status File", href: soon("Employment Status File", "Master Data"), icon: UserCog },
-      { label: "Appointment Status File", href: soon("Appointment Status File", "Master Data"), icon: FileText },
+      { label: "Appointment Status File", href: "/appointment-statuses", icon: FileText },
       { label: "Salary Grade File", href: "/salary-grades", icon: Banknote },
       { label: "Work Assignments File", href: soon("Work Assignments File", "Master Data"), icon: Briefcase },
       { label: "Job Description File", href: soon("Job Description File", "Master Data"), icon: FileText },
