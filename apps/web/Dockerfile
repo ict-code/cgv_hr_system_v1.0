@@ -9,6 +9,11 @@ COPY apps/web/package.json apps/web/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
+# NEXT_PUBLIC_* vars are inlined into the client bundle at build time, not
+# read at runtime — a docker-compose `environment:` value alone does nothing
+# for client-side code. Must be passed as a build ARG.
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY apps/web apps/web
 RUN pnpm --filter web build
 # Same approach as apps/api/Dockerfile: pnpm's .pnpm symlink store doesn't

@@ -23,17 +23,25 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// An untouched number input's RHF value is "" (not undefined), which
+// z.coerce.number() turns into NaN and rejects — even when the field is
+// .optional(). Preprocess "" to undefined first so leaving an optional
+// numeric field blank actually validates as "not provided".
+function optionalNumber(schema: z.ZodNumber) {
+  return z.preprocess((val) => (val === "" ? undefined : val), schema.optional());
+}
+
 const changeSchema = z.object({
   status: z.enum(APPOINTMENT_STATUSES),
   effectDate: z.string().min(1, "Required"),
   departmentId: z.string().optional(),
   positionId: z.string().optional(),
   employmentStatus: z.enum(EMPLOYMENT_STATUSES).optional().or(z.literal("")),
-  actualSalary: z.coerce.number().optional(),
-  monthlyRate: z.coerce.number().optional(),
-  grade: z.coerce.number().int().optional(),
-  stepNo: z.coerce.number().int().optional(),
-  efficiencyRate: z.coerce.number().int().min(1).max(5).optional(),
+  actualSalary: optionalNumber(z.coerce.number()),
+  monthlyRate: optionalNumber(z.coerce.number()),
+  grade: optionalNumber(z.coerce.number().int()),
+  stepNo: optionalNumber(z.coerce.number().int()),
+  efficiencyRate: optionalNumber(z.coerce.number().int().min(1).max(5)),
 });
 
 type ChangeForm = z.infer<typeof changeSchema>;
@@ -228,6 +236,15 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
               <Label htmlFor="stepNo">Step</Label>
               <Input id="stepNo" {...register("stepNo")} />
             </div>
+
+            {Object.keys(errors).length > 0 && (
+              <p className="sm:col-span-2 text-sm text-[var(--color-danger)]">
+                {Object.values(errors)
+                  .map((e) => e?.message)
+                  .filter(Boolean)
+                  .join(" · ") || "Check the highlighted fields."}
+              </p>
+            )}
 
             {recordChange.isError && (
               <p className="sm:col-span-2 text-sm text-[var(--color-danger)]">{(recordChange.error as Error).message}</p>
