@@ -16,6 +16,7 @@ const PERMISSION_CATALOG = [
   ['plantilla', 'create'],
   ['salaryGrades', 'view'],
   ['salaryGrades', 'create'],
+  ['salaryGrades', 'edit'],
   ['users', 'view'],
   ['users', 'create'],
   ['users', 'edit'],
@@ -37,6 +38,7 @@ const HR_STAFF_PERMISSIONS = new Set([
   'plantilla:create',
   'salaryGrades:view',
   'salaryGrades:create',
+  'salaryGrades:edit',
   'appointmentStatuses:view',
   'appointmentStatuses:create',
 ]);
