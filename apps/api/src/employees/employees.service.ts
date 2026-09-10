@@ -20,10 +20,16 @@ export class EmployeesService {
       where: { id },
       include: {
         department: true,
+        division: true,
         dependents: true,
         appointments: { orderBy: { effectDate: 'desc' } },
         changeLogs: { orderBy: { createdAt: 'desc' } },
         serviceRecords: { orderBy: { startDate: 'desc' } },
+        educationRecords: { orderBy: { createdAt: 'desc' } },
+        eligibilityRecords: { orderBy: { createdAt: 'desc' } },
+        workExperience: { orderBy: { startDate: 'desc' } },
+        trainingRecords: { orderBy: { createdAt: 'desc' } },
+        skills: { orderBy: { createdAt: 'asc' } },
       },
     });
 

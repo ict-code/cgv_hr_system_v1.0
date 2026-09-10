@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { use } from "react";
+import { use, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
@@ -13,6 +13,10 @@ import {
   EMPLOYMENT_STATUSES,
   type Department,
   type EmployeeDetail,
+  type EmployeeEducation,
+  type EmployeeEligibility,
+  type EmployeeTraining,
+  type EmployeeWorkExperience,
   type Position,
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -22,6 +26,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { EmployeeRecordsTab, type RecordColumn, type RecordField } from "@/components/employee-records-tab";
+import { cn } from "@/lib/utils";
+import { PersonalDataTab } from "./personal-data-tab";
+import { FamilyBackgroundTab } from "./family-background-tab";
 
 // An untouched number input's RHF value is "" (not undefined), which
 // z.coerce.number() turns into NaN and rejects — even when the field is
@@ -46,14 +54,217 @@ const changeSchema = z.object({
 
 type ChangeForm = z.infer<typeof changeSchema>;
 
+const TABS = [
+  { key: "overview", label: "Overview" },
+  { key: "personal-data", label: "Personal Data" },
+  { key: "family-background", label: "Family Background" },
+  { key: "education", label: "Education" },
+  { key: "eligibility", label: "Eligibility" },
+  { key: "work-experience", label: "Work Experience" },
+  { key: "training", label: "Training/Seminars" },
+] as const;
+
+type TabKey = (typeof TABS)[number]["key"];
+
 export default function EmployeeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const queryClient = useQueryClient();
+  const [tab, setTab] = useState<TabKey>("overview");
 
   const employee = useQuery({
     queryKey: ["employees", id],
     queryFn: () => apiFetch<EmployeeDetail>(`/employees/${id}`),
   });
+
+  if (employee.isLoading) return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
+  if (employee.isError) return <p className="text-sm text-[var(--color-danger)]">{(employee.error as Error).message}</p>;
+  if (!employee.data) return null;
+
+  const emp = employee.data;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h1 className="text-xl font-bold text-foreground">
+          {emp.lastName}, {emp.firstName} {emp.middleName ?? ""}
+        </h1>
+        <p className="text-sm text-[var(--color-muted)]">
+          Emp. No. {emp.empNo} — {emp.department?.deptDesc ?? "No department"}
+        </p>
+      </div>
+
+      <div className="flex flex-wrap gap-1 border-b border-[var(--color-border)]">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={cn(
+              "border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              tab === t.key
+                ? "border-brand-500 text-brand-600"
+                : "border-transparent text-[var(--color-muted)] hover:text-foreground",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "overview" && <OverviewTab employee={emp} />}
+      {tab === "personal-data" && <PersonalDataTab employee={emp} />}
+      {tab === "family-background" && <FamilyBackgroundTab employee={emp} />}
+      {tab === "education" && <EducationTab employee={emp} />}
+      {tab === "eligibility" && <EligibilityTab employee={emp} />}
+      {tab === "work-experience" && <WorkExperienceTab employee={emp} />}
+      {tab === "training" && <TrainingTab employee={emp} />}
+    </div>
+  );
+}
+
+function EducationTab({ employee }: { employee: EmployeeDetail }) {
+  const columns: RecordColumn<EmployeeEducation>[] = [
+    { key: "level", label: "Level" },
+    { key: "schoolName", label: "School/University/College" },
+    { key: "schoolYear", label: "School Year" },
+    { key: "course", label: "Course/Degree", render: (row) => row.course ?? row.degree ?? "—" },
+    { key: "honors", label: "Honors" },
+  ];
+  const fields: RecordField[] = [
+    { key: "level", label: "Level", type: "text", required: true },
+    { key: "schoolName", label: "School/University/College", type: "text", required: true },
+    { key: "schoolYear", label: "School Year", type: "text" },
+    { key: "course", label: "Course", type: "text" },
+    { key: "degree", label: "Degree", type: "text" },
+    { key: "honors", label: "Honor(s)", type: "text" },
+  ];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Educational Background</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <EmployeeRecordsTab<EmployeeEducation>
+          employeeId={employee.id}
+          resourcePath="education"
+          queryKeySuffix="education"
+          columns={columns}
+          fields={fields}
+          emptyLabel="No education records yet."
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function EligibilityTab({ employee }: { employee: EmployeeDetail }) {
+  const columns: RecordColumn<EmployeeEligibility>[] = [
+    { key: "examName", label: "Examination/BAR" },
+    { key: "examDate", label: "Date(s)", render: (row) => formatDate(row.examDate) },
+    { key: "examPlace", label: "Place of Examination" },
+    { key: "rating", label: "Rating" },
+  ];
+  const fields: RecordField[] = [
+    { key: "examName", label: "Examination/BAR", type: "text", required: true },
+    { key: "examDate", label: "Examination Date", type: "date" },
+    { key: "examPlace", label: "Place", type: "text" },
+    { key: "rating", label: "Rating", type: "text" },
+  ];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Eligibility Records</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <EmployeeRecordsTab<EmployeeEligibility>
+          employeeId={employee.id}
+          resourcePath="eligibility"
+          queryKeySuffix="eligibility"
+          columns={columns}
+          fields={fields}
+          emptyLabel="No eligibility records yet."
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function WorkExperienceTab({ employee }: { employee: EmployeeDetail }) {
+  const columns: RecordColumn<EmployeeWorkExperience>[] = [
+    { key: "startDate", label: "From", render: (row) => formatDate(row.startDate) },
+    { key: "endDate", label: "To", render: (row) => formatDate(row.endDate) },
+    { key: "position", label: "Position" },
+    { key: "company", label: "Company/Office" },
+    { key: "salary", label: "Salary", render: (row) => formatCurrency(row.salary) },
+    { key: "salaryUnit", label: "per" },
+    { key: "employmentStatus", label: "Employment Status" },
+  ];
+  const fields: RecordField[] = [
+    { key: "company", label: "Company/Office", type: "text", required: true },
+    { key: "position", label: "Position", type: "text" },
+    { key: "startDate", label: "From", type: "date" },
+    { key: "endDate", label: "To", type: "date" },
+    { key: "salary", label: "Salary", type: "number" },
+    { key: "salaryUnit", label: "per (Monthly/Daily)", type: "text" },
+    { key: "employmentStatus", label: "Employment Status", type: "text" },
+  ];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Work Experience Records</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <EmployeeRecordsTab<EmployeeWorkExperience>
+          employeeId={employee.id}
+          resourcePath="work-experience"
+          queryKeySuffix="work-experience"
+          columns={columns}
+          fields={fields}
+          emptyLabel="No work experience records yet."
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function TrainingTab({ employee }: { employee: EmployeeDetail }) {
+  const columns: RecordColumn<EmployeeTraining>[] = [
+    { key: "trainingName", label: "Training/Study/Seminar" },
+    { key: "periodCovered", label: "Period Covered" },
+    { key: "conductor", label: "Conductor" },
+    { key: "numberOfHours", label: "No. of Hours" },
+  ];
+  const fields: RecordField[] = [
+    { key: "trainingName", label: "Training/Study/Seminar", type: "text", required: true },
+    { key: "startDate", label: "Start date", type: "date" },
+    { key: "endDate", label: "End date", type: "date" },
+    { key: "conductor", label: "Conductor", type: "text" },
+    { key: "periodCovered", label: "Period Covered", type: "text" },
+    { key: "numberOfHours", label: "No. of Hours", type: "number" },
+  ];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Training/Study/Seminar Records</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <EmployeeRecordsTab<EmployeeTraining>
+          employeeId={employee.id}
+          resourcePath="training"
+          queryKeySuffix="training"
+          columns={columns}
+          fields={fields}
+          emptyLabel="No training records yet."
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function OverviewTab({ employee }: { employee: EmployeeDetail }) {
+  const id = employee.id;
+  const queryClient = useQueryClient();
+  const emp = employee;
+  const currentAppointment = emp.appointments[0];
 
   const departments = useQuery({
     queryKey: ["/departments"],
@@ -90,24 +301,8 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     },
   });
 
-  if (employee.isLoading) return <p className="text-sm text-[var(--color-muted)]">Loading…</p>;
-  if (employee.isError) return <p className="text-sm text-[var(--color-danger)]">{(employee.error as Error).message}</p>;
-  if (!employee.data) return null;
-
-  const emp = employee.data;
-  const currentAppointment = emp.appointments[0];
-
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">
-          {emp.lastName}, {emp.firstName} {emp.middleName ?? ""}
-        </h1>
-        <p className="text-sm text-[var(--color-muted)]">
-          Emp. No. {emp.empNo} — {emp.department?.deptDesc ?? "No department"}
-        </p>
-      </div>
-
       {currentAppointment && (
         <Card>
           <CardHeader>

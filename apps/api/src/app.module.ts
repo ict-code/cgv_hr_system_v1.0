@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module.js';
 import { RolesModule } from './roles/roles.module.js';
 import { PlantillaModule } from './plantilla/plantilla.module.js';
 import { SalaryGradesModule } from './salary-grades/salary-grades.module.js';
+import { PersonnelRecordsModule } from './personnel-records/personnel-records.module.js';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { SalaryGradesModule } from './salary-grades/salary-grades.module.js';
     RolesModule,
     PlantillaModule,
     SalaryGradesModule,
+    PersonnelRecordsModule,
   ],
   controllers: [HealthController],
 })

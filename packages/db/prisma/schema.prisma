@@ -125,6 +125,8 @@ model Division {
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id])
 
+  employees Employee[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -227,10 +229,12 @@ model Employee {
   civilStatus String?
   nationality String  @default("Filipino")
 
-  fatherName  String?
-  motherName  String?
-  spouseName  String?
-  spouseWork  String?
+  fatherName       String?
+  fatherBirthPlace String?
+  motherName       String?
+  motherBirthPlace String?
+  spouseName       String?
+  spouseWork       String?
 
   // Government-issued identifiers — never transformed, per DATA_MIGRATION_ANALYSIS.md §5
   tin           String?
@@ -254,18 +258,156 @@ model Employee {
   dateInactivated  DateTime?
   inactiveCause    String?
 
+  // Physical/ID — legacy Personal Data Sheet fields (PERSONNEL_ANALYSIS.md, personal table)
+  height       Decimal? @db.Decimal(5, 2)
+  weight       Decimal? @db.Decimal(5, 2)
+  bloodType    String?
+  idNo         String? // legacy id-no — a separate ID-card number from empNo/biometricId
+  biometricId  String? // legacy bio-id
+
+  // Classification — free-text for now; legacy PWD/Religion/Country master tables
+  // are deferred (Master Data section, not yet built) rather than a prerequisite here.
+  pwdType  String?
+  religion String?
+  country  String?
+
+  jobDescription String? // legacy job-desc-code lookup — free text for now, same reasoning as above
+  remarks        String?
+
+  // Present address components (legacy addr-* fields) — Province/Locality/Barangay
+  // kept free-text pending the Master Data geographic reference tables.
+  addrUnitNo   String?
+  addrStreet   String?
+  addrPhase    String?
+  addrBlockNo  String?
+  addrLot      String?
+  addrBarangay String?
+  addrLocality String?
+  addrProvince String?
+  addrZip      String?
+  addrTelNo    String?
+
+  // Permanent address — legacy shows this as a read-only summary box, not a second
+  // full structured-component set, so kept as free text.
+  permanentAddress  String?
+  permanentTelNo    String?
+  permanentZipCode  String?
+
+  // HR sign-off on the PDS record itself (legacy Validated/Validated-by/Validate-Date).
+  validated     Boolean   @default(false)
+  validatedDate DateTime?
+  validatedBy   String?
+
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
+  divisionId   String?
+  division     Division?   @relation(fields: [divisionId], references: [id])
 
-  dependents    Dependent[]
-  appointments  Appointment[]
-  changeLogs    AppointmentChangeLog[]
+  dependents     Dependent[]
+  appointments   Appointment[]
+  changeLogs     AppointmentChangeLog[]
   serviceRecords ServiceRecord[]
+  educationRecords     EmployeeEducation[]
+  eligibilityRecords   EmployeeEligibility[]
+  workExperience       EmployeeWorkExperience[]
+  trainingRecords      EmployeeTraining[]
+  skills               EmployeeSkill[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("employees")
+}
+
+/// Educational Background File — legacy `Educations` table (confirmed the real
+/// one-row-per-entry backing store via its Emp-No+Level+School-Name+School-Year
+/// unique index, not the EXTENT=8 arrays duplicated on `personal`).
+model EmployeeEducation {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  level      String
+  schoolName String
+  schoolYear String?
+  course     String?
+  degree     String?
+  honors     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employee_education")
+}
+
+/// Eligibility Records File — legacy `Eligibility` table.
+model EmployeeEligibility {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  examName  String
+  examDate  DateTime?
+  examPlace String?
+  rating    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employee_eligibility")
+}
+
+/// Work Experience Records File — legacy `Services` table (prior/external
+/// employment history, distinct from this LGU's own Appointment history).
+model EmployeeWorkExperience {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  company          String
+  position         String?
+  startDate        DateTime?
+  endDate          DateTime?
+  salary           Decimal? @db.Decimal(14, 2)
+  salaryUnit       String?
+  employmentStatus String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employee_work_experience")
+}
+
+/// Training/Study/Seminar Records File — legacy `Training` table.
+model EmployeeTraining {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  trainingName   String
+  startDate      DateTime?
+  endDate        DateTime?
+  conductor      String?
+  periodCovered  String?
+  numberOfHours  Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employee_training")
+}
+
+/// Employee Skills — legacy Personal.Skills free-text field, normalized to a
+/// simple add/remove list matching the Dependent model's existing pattern.
+model EmployeeSkill {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  name       String
+
+  createdAt DateTime @default(now())
+
+  @@map("employee_skills")
 }
 
 /// Normalizes legacy Personal.Child-Name[15]/Child-Age[15] EXTENT arrays into

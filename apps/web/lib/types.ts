@@ -30,16 +30,77 @@ export type Position = {
   shortDesc: string | null;
 };
 
+export type Division = {
+  id: string;
+  divCode: number;
+  divDesc: string;
+  departmentId: string;
+};
+
 export type Employee = {
   id: string;
   empNo: number;
   lastName: string;
   firstName: string;
   middleName: string | null;
+  suffix: string | null;
+  birthDate: string | null;
+  birthPlace: string | null;
   sex: string | null;
   civilStatus: string | null;
+  nationality: string;
+  fatherName: string | null;
+  fatherBirthPlace: string | null;
+  motherName: string | null;
+  motherBirthPlace: string | null;
+  spouseName: string | null;
+  spouseWork: string | null;
+  tin: string | null;
+  gsisNo: string | null;
+  pagibigNo: string | null;
+  philhealthNo: string | null;
+  address: string | null;
+  telNo: string | null;
+  cellNo: string | null;
+  emailAddress: string | null;
+  bankAccountNo: string | null;
+  taxStatus: string | null;
+  dateHired: string | null;
+  hiredDate: string | null;
+  appointDate: string | null;
+  inactive: boolean;
+  dateInactivated: string | null;
+  inactiveCause: string | null;
+  height: string | null;
+  weight: string | null;
+  bloodType: string | null;
+  idNo: string | null;
+  biometricId: string | null;
+  pwdType: string | null;
+  religion: string | null;
+  country: string | null;
+  jobDescription: string | null;
+  remarks: string | null;
+  addrUnitNo: string | null;
+  addrStreet: string | null;
+  addrPhase: string | null;
+  addrBlockNo: string | null;
+  addrLot: string | null;
+  addrBarangay: string | null;
+  addrLocality: string | null;
+  addrProvince: string | null;
+  addrZip: string | null;
+  addrTelNo: string | null;
+  permanentAddress: string | null;
+  permanentTelNo: string | null;
+  permanentZipCode: string | null;
+  validated: boolean;
+  validatedDate: string | null;
+  validatedBy: string | null;
   departmentId: string | null;
   department?: Department | null;
+  divisionId: string | null;
+  division?: Division | null;
 };
 
 export type Appointment = {
@@ -80,11 +141,67 @@ export type ServiceRecord = {
   salarySnapshot: string | null;
 };
 
+export type Dependent = {
+  id: string;
+  name: string;
+  birthDate: string | null;
+  age: number | null;
+};
+
+export type EmployeeEducation = {
+  id: string;
+  level: string;
+  schoolName: string;
+  schoolYear: string | null;
+  course: string | null;
+  degree: string | null;
+  honors: string | null;
+};
+
+export type EmployeeEligibility = {
+  id: string;
+  examName: string;
+  examDate: string | null;
+  examPlace: string | null;
+  rating: string | null;
+};
+
+export type EmployeeWorkExperience = {
+  id: string;
+  company: string;
+  position: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  salary: string | null;
+  salaryUnit: string | null;
+  employmentStatus: string | null;
+};
+
+export type EmployeeTraining = {
+  id: string;
+  trainingName: string;
+  startDate: string | null;
+  endDate: string | null;
+  conductor: string | null;
+  periodCovered: string | null;
+  numberOfHours: number | null;
+};
+
+export type EmployeeSkill = {
+  id: string;
+  name: string;
+};
+
 export type EmployeeDetail = Employee & {
-  dependents: unknown[];
+  dependents: Dependent[];
   appointments: Appointment[];
   changeLogs: AppointmentChangeLog[];
   serviceRecords: ServiceRecord[];
+  educationRecords: EmployeeEducation[];
+  eligibilityRecords: EmployeeEligibility[];
+  workExperience: EmployeeWorkExperience[];
+  trainingRecords: EmployeeTraining[];
+  skills: EmployeeSkill[];
 };
 
 export type Permission = {
