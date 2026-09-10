@@ -21,8 +21,8 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center border-b border-[var(--color-border)] bg-white px-4">
-      <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between">
+    <header className="flex h-14 shrink-0 items-center border-b border-[var(--color-border)] bg-white px-6">
+      <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Image src="/vigan-seal.png" alt="City of Vigan seal" width={36} height={36} className="h-9 w-9" priority />
           <div>

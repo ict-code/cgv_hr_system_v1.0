@@ -41,8 +41,8 @@ export function NavBar() {
   })).filter((section) => section.items.length > 0);
 
   return (
-    <nav ref={navRef} className="relative flex h-11 border-b border-[var(--color-border)] bg-white px-4">
-      <div className="mx-auto flex w-full max-w-[1400px] items-center gap-1">
+    <nav ref={navRef} className="relative flex h-12 border-b border-[var(--color-border)] bg-white px-6">
+      <div className="flex w-full items-center gap-2">
         {sections.map((section) => {
           const key = section.title ?? section.items[0].href;
           const active = isSectionActive(section, pathname);
@@ -55,7 +55,7 @@ export function NavBar() {
                 key={key}
                 href={item.href}
                 className={cn(
-                  "flex h-11 items-center gap-1.5 border-b-2 px-2.5 text-sm font-medium transition-colors",
+                  "flex h-12 items-center gap-2 whitespace-nowrap border-b-2 px-4 text-sm font-medium transition-colors",
                   active ? "border-brand-500 text-brand-600" : "border-transparent text-[var(--color-muted)] hover:text-foreground",
                 )}
               >
@@ -72,7 +72,7 @@ export function NavBar() {
                 type="button"
                 onClick={() => setOpenSection(isOpen ? null : key)}
                 className={cn(
-                  "flex h-11 items-center gap-1.5 border-b-2 px-2.5 text-sm font-medium transition-colors",
+                  "flex h-12 items-center gap-2 whitespace-nowrap border-b-2 px-4 text-sm font-medium transition-colors",
                   active ? "border-brand-500 text-brand-600" : "border-transparent text-[var(--color-muted)] hover:text-foreground",
                 )}
               >
