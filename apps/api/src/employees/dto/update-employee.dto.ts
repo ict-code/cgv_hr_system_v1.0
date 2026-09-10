@@ -1,5 +1,6 @@
 import { PartialType, OmitType } from '@nestjs/mapped-types';
-import { IsBoolean, IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
 import { CreateEmployeeDto } from './create-employee.dto.js';
 
 // CreateEmployeeDto stays intentionally minimal (identity fields only, matching
@@ -112,8 +113,9 @@ export class UpdateEmployeeDto extends PartialType(OmitType(CreateEmployeeDto, [
   validated?: boolean;
 
   @IsOptional()
-  @IsDateString()
-  validatedDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  validatedDate?: Date;
 
   @IsOptional()
   @IsString()
@@ -129,8 +131,9 @@ export class UpdateEmployeeDto extends PartialType(OmitType(CreateEmployeeDto, [
 
   // Fields already on Employee that Create doesn't cover but Edit should.
   @IsOptional()
-  @IsDateString()
-  birthDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  birthDate?: Date;
 
   @IsOptional()
   @IsString()
@@ -197,16 +200,19 @@ export class UpdateEmployeeDto extends PartialType(OmitType(CreateEmployeeDto, [
   taxStatus?: string;
 
   @IsOptional()
-  @IsDateString()
-  dateHired?: string;
+  @IsDate()
+  @Type(() => Date)
+  dateHired?: Date;
 
   @IsOptional()
-  @IsDateString()
-  hiredDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  hiredDate?: Date;
 
   @IsOptional()
-  @IsDateString()
-  appointDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  appointDate?: Date;
 
   @IsOptional()
   @IsBoolean()

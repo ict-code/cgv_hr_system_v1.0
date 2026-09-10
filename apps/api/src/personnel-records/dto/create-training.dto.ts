@@ -1,16 +1,19 @@
-import { IsDateString, IsInt, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateTrainingDto {
   @IsString()
   trainingName!: string;
 
   @IsOptional()
-  @IsDateString()
-  startDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  startDate?: Date;
 
   @IsOptional()
-  @IsDateString()
-  endDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  endDate?: Date;
 
   @IsOptional()
   @IsString()

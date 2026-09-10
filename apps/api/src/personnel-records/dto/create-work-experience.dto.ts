@@ -1,4 +1,5 @@
-import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateWorkExperienceDto {
   @IsString()
@@ -9,12 +10,14 @@ export class CreateWorkExperienceDto {
   position?: string;
 
   @IsOptional()
-  @IsDateString()
-  startDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  startDate?: Date;
 
   @IsOptional()
-  @IsDateString()
-  endDate?: string;
+  @IsDate()
+  @Type(() => Date)
+  endDate?: Date;
 
   @IsOptional()
   @IsNumber()
