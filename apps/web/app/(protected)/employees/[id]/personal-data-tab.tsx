@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { apiFetch, apiFetchAll } from "@/lib/api";
-import type { Department, Division, EmployeeDetail, EmployeeSkill } from "@/lib/types";
+import type { Department, Division, EmployeeDetail, EmployeeSkill, SalaryGradeTable } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,6 +76,11 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
     // select empty is fine since divisionId is optional and the field still works
     // once a Divisions admin screen exists.
     queryFn: () => Promise.resolve<Division[]>([]),
+  });
+
+  const salaryGradeTables = useQuery({
+    queryKey: ["/salary-grade-tables"],
+    queryFn: () => apiFetchAll<SalaryGradeTable>("/salary-grade-tables"),
   });
 
   const save = useMutation({
@@ -197,6 +202,21 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
               {divisions.data?.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.divDesc}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="salaryGradeTableId">Salary grade table</Label>
+            <Select
+              id="salaryGradeTableId"
+              value={form.salaryGradeTableId ?? ""}
+              onChange={(e) => setForm((p) => ({ ...p, salaryGradeTableId: e.target.value }))}
+            >
+              <option value="">—</option>
+              {salaryGradeTables.data?.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
                 </option>
               ))}
             </Select>

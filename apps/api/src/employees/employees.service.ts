@@ -41,6 +41,7 @@ export class EmployeesService {
       include: {
         department: true,
         division: true,
+        salaryGradeTable: true,
         dependents: true,
         appointments: { orderBy: { effectDate: 'desc' } },
         changeLogs: { orderBy: { createdAt: 'desc' } },

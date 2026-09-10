@@ -4,11 +4,12 @@
 // legacy_db/extract_sgrade.p into Postgres via Prisma.
 //
 // Usage:
-//   node scripts/import-salary-grades.mjs --file /path/to/salary_grades.txt [--dry-run]
+//   node scripts/import-salary-grades.mjs --file /path/to/salary_grades.txt --table <salaryGradeTableId> [--dry-run]
 //
 // Each line: gradeNo<TAB>step1Amount<TAB>step2Amount...step10Amount (no header).
-// Idempotent: upserts SalaryGrade by its unique gradeNo, then upserts each
-// SalaryStep by the (salaryGradeId, stepNo) unique constraint.
+// Idempotent: upserts SalaryGrade by its (salaryGradeTableId, gradeNo) unique
+// constraint, then upserts each SalaryStep by the (salaryGradeId, stepNo)
+// unique constraint.
 
 import { readFileSync } from 'node:fs';
 import { PrismaClient } from '../generated/client/index.js';
@@ -16,10 +17,12 @@ import { PrismaClient } from '../generated/client/index.js';
 const args = process.argv.slice(2);
 const fileIndex = args.indexOf('--file');
 const filePath = fileIndex >= 0 ? args[fileIndex + 1] : null;
+const tableIndex = args.indexOf('--table');
+const salaryGradeTableId = tableIndex >= 0 ? args[tableIndex + 1] : null;
 const dryRun = args.includes('--dry-run');
 
-if (!filePath) {
-  console.error('Usage: node import-salary-grades.mjs --file <salary_grades.txt> [--dry-run]');
+if (!filePath || (!salaryGradeTableId && !dryRun)) {
+  console.error('Usage: node import-salary-grades.mjs --file <salary_grades.txt> --table <salaryGradeTableId> [--dry-run]');
   process.exit(1);
 }
 
@@ -42,9 +45,9 @@ for (const line of lines) {
   }
 
   const grade = await prisma.salaryGrade.upsert({
-    where: { gradeNo },
+    where: { salaryGradeTableId_gradeNo: { salaryGradeTableId, gradeNo } },
     update: {},
-    create: { gradeNo },
+    create: { gradeNo, salaryGradeTableId },
   });
   gradesImported++;
 

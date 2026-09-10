@@ -123,6 +123,10 @@ export class UpdateEmployeeDto extends PartialType(OmitType(CreateEmployeeDto, [
   @IsString()
   divisionId?: string;
 
+  @IsOptional()
+  @IsString()
+  salaryGradeTableId?: string;
+
   // Fields already on Employee that Create doesn't cover but Edit should.
   @IsOptional()
   @IsDateString()

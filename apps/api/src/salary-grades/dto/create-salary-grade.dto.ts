@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayMinSize, IsInt, IsNumber, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsInt, IsNumber, IsString, ValidateNested } from 'class-validator';
 
 export class SalaryStepDto {
   @IsNumber()
@@ -10,6 +10,9 @@ export class SalaryStepDto {
 }
 
 export class CreateSalaryGradeDto {
+  @IsString()
+  salaryGradeTableId!: string;
+
   @IsInt()
   gradeNo!: number;
 

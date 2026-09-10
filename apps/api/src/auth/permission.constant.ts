@@ -14,6 +14,7 @@ export const PERMISSION_CATALOG = [
   ['salaryGrades', 'view'],
   ['salaryGrades', 'create'],
   ['salaryGrades', 'edit'],
+  ['salaryGrades', 'delete'],
   ['users', 'view'],
   ['users', 'create'],
   ['users', 'edit'],

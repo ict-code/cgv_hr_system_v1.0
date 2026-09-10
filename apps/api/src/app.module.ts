@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module.js';
 import { RolesModule } from './roles/roles.module.js';
 import { PlantillaModule } from './plantilla/plantilla.module.js';
 import { SalaryGradesModule } from './salary-grades/salary-grades.module.js';
+import { SalaryGradeTablesModule } from './salary-grade-tables/salary-grade-tables.module.js';
 import { PersonnelRecordsModule } from './personnel-records/personnel-records.module.js';
 import { AppointmentStatusesModule } from './appointment-statuses/appointment-statuses.module.js';
 
@@ -29,6 +30,7 @@ import { AppointmentStatusesModule } from './appointment-statuses/appointment-st
     RolesModule,
     PlantillaModule,
     SalaryGradesModule,
+    SalaryGradeTablesModule,
     PersonnelRecordsModule,
     AppointmentStatusesModule,
   ],

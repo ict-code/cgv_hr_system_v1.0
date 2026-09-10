@@ -114,6 +114,8 @@ export type Employee = {
   department?: Department | null;
   divisionId: string | null;
   division?: Division | null;
+  salaryGradeTableId: string | null;
+  salaryGradeTable?: SalaryGradeTable | null;
 };
 
 export type Appointment = {
@@ -262,5 +264,13 @@ export type SalaryStep = {
 export type SalaryGrade = {
   id: string;
   gradeNo: number;
+  salaryGradeTableId: string;
   steps: SalaryStep[];
+};
+
+export type SalaryGradeTable = {
+  id: string;
+  name: string;
+  effectiveDate: string | null;
+  description: string | null;
 };

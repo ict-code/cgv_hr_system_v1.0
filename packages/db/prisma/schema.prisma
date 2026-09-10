@@ -170,16 +170,40 @@ model Plantilla {
   @@map("plantillas")
 }
 
-model SalaryGrade {
-  id      String @id @default(cuid())
-  gradeNo Int    @unique // legacy sgrade-no
+/// A named salary schedule/version — legacy sGradeType x sgrade-effectivity
+/// (e.g. "2026 SSL 3rd Tranche - Main" vs. "...- Health", or an older
+/// effectivity kept for employees still paid off it). Each table owns its
+/// own full 1-50 grade grid; an Employee optionally points at the one that
+/// applies to them (Employee.salaryGradeTableId) instead of always using
+/// whatever table happens to be "current".
+model SalaryGradeTable {
+  id            String    @id @default(cuid())
+  name          String
+  effectiveDate DateTime?
+  description   String?
 
-  steps         SalaryStep[]
-  effectivities SalaryGradeEffectivity[]
+  grades    SalaryGrade[]
+  employees Employee[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@map("salary_grade_tables")
+}
+
+model SalaryGrade {
+  id      String @id @default(cuid())
+  gradeNo Int // legacy sgrade-no
+
+  salaryGradeTableId String
+  salaryGradeTable   SalaryGradeTable @relation(fields: [salaryGradeTableId], references: [id], onDelete: Cascade)
+
+  steps SalaryStep[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([salaryGradeTableId, gradeNo])
   @@map("salary_grades")
 }
 
@@ -188,25 +212,13 @@ model SalaryGrade {
 model SalaryStep {
   id            String  @id @default(cuid())
   salaryGradeId String
-  salaryGrade   SalaryGrade @relation(fields: [salaryGradeId], references: [id])
+  salaryGrade   SalaryGrade @relation(fields: [salaryGradeId], references: [id], onDelete: Cascade)
   stepNo        Int // 1-10
   amount        Decimal @db.Decimal(14, 2)
   monthlyRate   Decimal @db.Decimal(14, 2)
 
   @@unique([salaryGradeId, stepNo])
   @@map("salary_steps")
-}
-
-model SalaryGradeEffectivity {
-  id            String   @id @default(cuid())
-  effectDate    DateTime
-  salaryGradeId String
-  salaryGrade   SalaryGrade @relation(fields: [salaryGradeId], references: [id])
-  description   String?
-
-  createdAt DateTime @default(now())
-
-  @@map("salary_grade_effectivities")
 }
 
 // ---------------------------------------------------------------------------
@@ -301,6 +313,11 @@ model Employee {
   department   Department? @relation(fields: [departmentId], references: [id])
   divisionId   String?
   division     Division?   @relation(fields: [divisionId], references: [id])
+
+  // Which salary schedule this employee is paid off — optional; unset means
+  // "use whatever table the payroll process treats as current."
+  salaryGradeTableId String?
+  salaryGradeTable   SalaryGradeTable? @relation(fields: [salaryGradeTableId], references: [id], onDelete: SetNull)
 
   dependents     Dependent[]
   appointments   Appointment[]
