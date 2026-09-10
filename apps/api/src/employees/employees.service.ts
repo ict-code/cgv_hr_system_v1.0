@@ -1,18 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@egaps/db';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto.js';
+import type { ListQueryDto, PaginatedResult } from '../common/dto/list-query.dto.js';
 
 @Injectable()
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.employee.findMany({
-      take: 50,
-      orderBy: { lastName: 'asc' },
-      include: { department: true },
-    });
+  async findAll(query: ListQueryDto): Promise<PaginatedResult<unknown>> {
+    const where: Prisma.EmployeeWhereInput = query.search
+      ? {
+          OR: [
+            { lastName: { contains: query.search, mode: 'insensitive' } },
+            { firstName: { contains: query.search, mode: 'insensitive' } },
+            { idNo: { contains: query.search, mode: 'insensitive' } },
+            { biometricId: { contains: query.search, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+
+    const [data, total] = await Promise.all([
+      this.prisma.employee.findMany({
+        where,
+        orderBy: { lastName: 'asc' },
+        include: { department: true },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.employee.count({ where }),
+    ]);
+
+    return { data, total, page: query.page, pageSize: query.pageSize };
   }
 
   async findOne(id: string) {

@@ -2,17 +2,20 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { apiFetch, apiFetchAll } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import type { Department, Plantilla, Position } from "@/lib/types";
+import type { Department, PaginatedResult, Plantilla, Position } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
+
+const PAGE_SIZE = 20;
 
 const emptyForm = {
   itemNo: "",
@@ -28,20 +31,39 @@ export default function PlantillaPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+  if (debouncedSearch) query.set("search", debouncedSearch);
 
   const plantilla = useQuery({
-    queryKey: ["/plantilla"],
-    queryFn: () => apiFetch<Plantilla[]>("/plantilla"),
+    queryKey: ["/plantilla", page, debouncedSearch],
+    queryFn: () => apiFetch<PaginatedResult<Plantilla>>(`/plantilla?${query.toString()}`),
   });
+
+  const rows = plantilla.data?.data ?? [];
+  const total = plantilla.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const departments = useQuery({
     queryKey: ["/departments"],
-    queryFn: () => apiFetch<Department[]>("/departments"),
+    queryFn: () => apiFetchAll<Department>("/departments"),
   });
 
   const positions = useQuery({
     queryKey: ["/positions"],
-    queryFn: () => apiFetch<Position[]>("/positions"),
+    queryFn: () => apiFetchAll<Position>("/positions"),
   });
 
   const create = useMutation({
@@ -60,6 +82,9 @@ export default function PlantillaPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/plantilla"] });
+      // Sorted by item no. — search for the new row so it's not left off-screen on a later page.
+      setSearch(form.itemNo);
+      setPage(1);
       setForm(emptyForm);
       setDialogOpen(false);
     },
@@ -69,6 +94,8 @@ export default function PlantillaPage() {
     <div className="flex flex-col gap-4">
       <TableCard
         title="Plantilla"
+        search={search}
+        onSearchChange={setSearch}
         headerExtra={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
@@ -94,14 +121,14 @@ export default function PlantillaPage() {
                 </TableCell>
               </TableRow>
             )}
-            {!plantilla.isLoading && (plantilla.data ?? []).length === 0 && (
+            {!plantilla.isLoading && rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-[var(--color-muted)]">
                   No plantilla items yet.
                 </TableCell>
               </TableRow>
             )}
-            {plantilla.data?.map((p) => (
+            {rows.map((p) => (
               <TableRow key={p.id}>
                 <TableCell>{p.itemNo}</TableCell>
                 <TableCell>{p.department?.deptDesc ?? "—"}</TableCell>
@@ -114,6 +141,7 @@ export default function PlantillaPage() {
             ))}
           </TableBody>
         </Table>
+        <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableCard>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="New Plantilla Item">

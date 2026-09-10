@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { use, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchAll } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -268,12 +268,12 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
 
   const departments = useQuery({
     queryKey: ["/departments"],
-    queryFn: () => apiFetch<Department[]>("/departments"),
+    queryFn: () => apiFetchAll<Department>("/departments"),
   });
 
   const positions = useQuery({
     queryKey: ["/positions"],
-    queryFn: () => apiFetch<Position[]>("/positions"),
+    queryFn: () => apiFetchAll<Position>("/positions"),
   });
 
   const {

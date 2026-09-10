@@ -2,12 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+const PAGE_SIZE = 10;
 
 export type RecordField = {
   key: string;
@@ -41,11 +44,21 @@ export function EmployeeRecordsTab<T extends { id: string }>({
   const apiPath = `/employees/${employeeId}/${resourcePath}`;
   const queryKey = ["employees", employeeId, queryKeySuffix];
   const [form, setForm] = useState<Record<string, string>>({});
+  const [page, setPage] = useState(1);
 
   const list = useQuery({
     queryKey,
     queryFn: () => apiFetch<T[]>(apiPath),
   });
+
+  const allRows = list.data ?? [];
+  const total = allRows.length;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const rows = allRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   const create = useMutation({
     mutationFn: () => {
@@ -86,14 +99,14 @@ export function EmployeeRecordsTab<T extends { id: string }>({
               </TableCell>
             </TableRow>
           )}
-          {!list.isLoading && (list.data ?? []).length === 0 && (
+          {!list.isLoading && rows.length === 0 && (
             <TableRow>
               <TableCell colSpan={columns.length + 1} className="text-center text-[var(--color-muted)]">
                 {emptyLabel}
               </TableCell>
             </TableRow>
           )}
-          {list.data?.map((row) => (
+          {rows.map((row) => (
             <TableRow key={row.id}>
               {columns.map((col) => (
                 <TableCell key={col.key}>{col.render ? col.render(row) : String(row[col.key] ?? "—")}</TableCell>
@@ -112,6 +125,7 @@ export function EmployeeRecordsTab<T extends { id: string }>({
           ))}
         </TableBody>
       </Table>
+      <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
 
       <form
         onSubmit={(e) => {

@@ -2,15 +2,18 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import type { Permission, Role } from "@/lib/types";
+import type { PaginatedResult, Permission, Role } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
+
+const PAGE_SIZE = 20;
 
 export default function RolesPage() {
   const queryClient = useQueryClient();
@@ -18,11 +21,30 @@ export default function RolesPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [permissionIds, setPermissionIds] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+  if (debouncedSearch) query.set("search", debouncedSearch);
 
   const roles = useQuery({
-    queryKey: ["/roles"],
-    queryFn: () => apiFetch<Role[]>("/roles"),
+    queryKey: ["/roles", page, debouncedSearch],
+    queryFn: () => apiFetch<PaginatedResult<Role>>(`/roles?${query.toString()}`),
   });
+
+  const rows = roles.data?.data ?? [];
+  const total = roles.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const permissions = useQuery({
     queryKey: ["/permissions"],
@@ -37,6 +59,9 @@ export default function RolesPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/roles"] });
+      // Sorted by name — search for the new row so it's not left off-screen on a later page.
+      setSearch(name);
+      setPage(1);
       setName("");
       setDescription("");
       setPermissionIds([]);
@@ -57,6 +82,8 @@ export default function RolesPage() {
     <div className="flex flex-col gap-4">
       <TableCard
         title="Roles"
+        search={search}
+        onSearchChange={setSearch}
         headerExtra={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
@@ -80,14 +107,14 @@ export default function RolesPage() {
                 </TableCell>
               </TableRow>
             )}
-            {!roles.isLoading && (roles.data ?? []).length === 0 && (
+            {!roles.isLoading && rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
                   No roles yet.
                 </TableCell>
               </TableRow>
             )}
-            {roles.data?.map((r) => (
+            {rows.map((r) => (
               <TableRow key={r.id}>
                 <TableCell>{r.name}</TableCell>
                 <TableCell className="text-[var(--color-muted)]">{r.description ?? "—"}</TableCell>
@@ -96,6 +123,7 @@ export default function RolesPage() {
             ))}
           </TableBody>
         </Table>
+        <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableCard>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="New Role" className="max-w-xl">

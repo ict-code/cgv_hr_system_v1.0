@@ -1,16 +1,25 @@
 import { Injectable } from '@nestjs/common';
+import type { SalaryGrade } from '@egaps/db';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateSalaryGradeDto } from './dto/create-salary-grade.dto.js';
+import type { ListQueryDto, PaginatedResult } from '../common/dto/list-query.dto.js';
 
 @Injectable()
 export class SalaryGradesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.salaryGrade.findMany({
-      include: { steps: { orderBy: { stepNo: 'asc' } } },
-      orderBy: { gradeNo: 'asc' },
-    });
+  async findAll(query: ListQueryDto): Promise<PaginatedResult<SalaryGrade>> {
+    const [data, total] = await Promise.all([
+      this.prisma.salaryGrade.findMany({
+        include: { steps: { orderBy: { stepNo: 'asc' } } },
+        orderBy: { gradeNo: 'asc' },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.salaryGrade.count(),
+    ]);
+
+    return { data, total, page: query.page, pageSize: query.pageSize };
   }
 
   create(dto: CreateSalaryGradeDto) {

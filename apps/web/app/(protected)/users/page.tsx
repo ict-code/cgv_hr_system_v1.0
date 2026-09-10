@@ -2,16 +2,19 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useState } from "react";
-import { apiFetch } from "@/lib/api";
-import type { Role, UserRow } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { apiFetch, apiFetchAll } from "@/lib/api";
+import type { PaginatedResult, Role, UserRow } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
+
+const PAGE_SIZE = 20;
 
 export default function UsersPage() {
   const queryClient = useQueryClient();
@@ -20,15 +23,34 @@ export default function UsersPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [roleIds, setRoleIds] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+  if (debouncedSearch) query.set("search", debouncedSearch);
 
   const users = useQuery({
-    queryKey: ["/users"],
-    queryFn: () => apiFetch<UserRow[]>("/users"),
+    queryKey: ["/users", page, debouncedSearch],
+    queryFn: () => apiFetch<PaginatedResult<UserRow>>(`/users?${query.toString()}`),
   });
+
+  const rows = users.data?.data ?? [];
+  const total = users.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const roles = useQuery({
     queryKey: ["/roles"],
-    queryFn: () => apiFetch<Role[]>("/roles"),
+    queryFn: () => apiFetchAll<Role>("/roles"),
   });
 
   const createUser = useMutation({
@@ -39,6 +61,9 @@ export default function UsersPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/users"] });
+      // Sorted by full name — search for the new row so it's not left off-screen on a later page.
+      setSearch(fullName);
+      setPage(1);
       setLoginId("");
       setPassword("");
       setFullName("");
@@ -55,6 +80,8 @@ export default function UsersPage() {
     <div className="flex flex-col gap-4">
       <TableCard
         title="Users"
+        search={search}
+        onSearchChange={setSearch}
         headerExtra={
           <Button size="sm" onClick={() => setDialogOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
@@ -79,14 +106,14 @@ export default function UsersPage() {
                 </TableCell>
               </TableRow>
             )}
-            {!users.isLoading && (users.data ?? []).length === 0 && (
+            {!users.isLoading && rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-[var(--color-muted)]">
                   No users yet.
                 </TableCell>
               </TableRow>
             )}
-            {users.data?.map((u) => (
+            {rows.map((u) => (
               <TableRow key={u.id}>
                 <TableCell>{u.loginId}</TableCell>
                 <TableCell>{u.fullName}</TableCell>
@@ -102,6 +129,7 @@ export default function UsersPage() {
             ))}
           </TableBody>
         </Table>
+        <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableCard>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="New User">

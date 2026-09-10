@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import type { Prisma } from '@egaps/db';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
+import type { ListQueryDto, PaginatedResult } from '../common/dto/list-query.dto.js';
 
 const USER_LIST_SELECT = {
   id: true,
@@ -17,8 +19,28 @@ const USER_LIST_SELECT = {
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.user.findMany({ select: USER_LIST_SELECT, orderBy: { fullName: 'asc' } });
+  async findAll(query: ListQueryDto): Promise<PaginatedResult<unknown>> {
+    const where: Prisma.UserWhereInput = query.search
+      ? {
+          OR: [
+            { loginId: { contains: query.search, mode: 'insensitive' } },
+            { fullName: { contains: query.search, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: USER_LIST_SELECT,
+        orderBy: { fullName: 'asc' },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return { data, total, page: query.page, pageSize: query.pageSize };
   }
 
   async create(dto: CreateUserDto) {

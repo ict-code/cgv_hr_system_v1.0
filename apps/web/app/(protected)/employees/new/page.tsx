@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchAll } from "@/lib/api";
 import type { Department, Employee } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +29,7 @@ export default function NewEmployeePage() {
   const router = useRouter();
   const departments = useQuery({
     queryKey: ["/departments"],
-    queryFn: () => apiFetch<Department[]>("/departments"),
+    queryFn: () => apiFetchAll<Department>("/departments"),
   });
 
   const {

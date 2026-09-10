@@ -2,14 +2,18 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import type { PaginatedResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
+
+const PAGE_SIZE = 20;
 
 export type ResourceField = {
   key: string;
@@ -48,12 +52,27 @@ export function ResourceCrudPage<T extends { id: string }>({
 }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+  if (searchKeys && debouncedSearch) query.set("search", debouncedSearch);
+  const queryKey = [apiPath, page, debouncedSearch];
+
   const list = useQuery({
-    queryKey: [apiPath],
-    queryFn: () => apiFetch<T[]>(apiPath),
+    queryKey,
+    queryFn: () => apiFetch<PaginatedResult<T>>(`${apiPath}?${query.toString()}`),
   });
 
   const create = useMutation({
@@ -67,15 +86,19 @@ export function ResourceCrudPage<T extends { id: string }>({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [apiPath] });
+      // The new row sorts alphabetically and may land past page 1 — search
+      // for it so it's actually visible instead of silently off-screen.
+      const searchField = searchKeys?.find((key) => formValues[key]);
+      if (searchField) setSearch(formValues[searchField]);
+      setPage(1);
       setFormValues({});
       setDialogOpen(false);
     },
   });
 
-  const rows = (list.data ?? []).filter((row) => {
-    if (!search || !searchKeys) return true;
-    return searchKeys.some((key) => String(row[key] ?? "").toLowerCase().includes(search.toLowerCase()));
-  });
+  const rows = list.data?.data ?? [];
+  const total = list.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="flex flex-col gap-4">
@@ -122,6 +145,7 @@ export function ResourceCrudPage<T extends { id: string }>({
             ))}
           </TableBody>
         </Table>
+        <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableCard>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={`New ${singularize(title)}`}>

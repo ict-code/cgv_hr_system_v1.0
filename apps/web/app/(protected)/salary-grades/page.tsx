@@ -3,15 +3,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Fragment, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchAll } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-import type { SalaryGrade } from "@/lib/types";
+import type { PaginatedResult, SalaryGrade } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
+
+const PAGE_SIZE = 20;
 
 const emptySteps = Array.from({ length: 10 }, () => ({ amount: "", monthlyRate: "" }));
 
@@ -20,11 +23,16 @@ export default function SalaryGradesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [gradeNo, setGradeNo] = useState("");
   const [steps, setSteps] = useState(emptySteps);
+  const [page, setPage] = useState(1);
 
   const salaryGrades = useQuery({
-    queryKey: ["/salary-grades"],
-    queryFn: () => apiFetch<SalaryGrade[]>("/salary-grades"),
+    queryKey: ["/salary-grades", page],
+    queryFn: () => apiFetch<PaginatedResult<SalaryGrade>>(`/salary-grades?page=${page}&pageSize=${PAGE_SIZE}`),
   });
+
+  const rows = salaryGrades.data?.data ?? [];
+  const total = salaryGrades.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const create = useMutation({
     mutationFn: () =>
@@ -35,8 +43,12 @@ export default function SalaryGradesPage() {
           steps: steps.map((s) => ({ amount: Number(s.amount), monthlyRate: Number(s.monthlyRate) })),
         }),
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.invalidateQueries({ queryKey: ["/salary-grades"] });
+      // Sorted by grade no. — jump to the page that will actually contain the new row.
+      const all = await apiFetchAll<SalaryGrade>("/salary-grades");
+      const index = all.findIndex((g) => g.gradeNo === Number(gradeNo));
+      if (index >= 0) setPage(Math.floor(index / PAGE_SIZE) + 1);
       setGradeNo("");
       setSteps(emptySteps);
       setDialogOpen(false);
@@ -74,14 +86,14 @@ export default function SalaryGradesPage() {
                 </TableCell>
               </TableRow>
             )}
-            {!salaryGrades.isLoading && (salaryGrades.data ?? []).length === 0 && (
+            {!salaryGrades.isLoading && rows.length === 0 && (
               <TableRow>
                 <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
                   No salary grades yet.
                 </TableCell>
               </TableRow>
             )}
-            {salaryGrades.data?.map((g) => (
+            {rows.map((g) => (
               <TableRow key={g.id}>
                 <TableCell>{g.gradeNo}</TableCell>
                 <TableCell>{formatCurrency(g.steps.find((s) => s.stepNo === 1)?.monthlyRate)}</TableCell>
@@ -90,6 +102,7 @@ export default function SalaryGradesPage() {
             ))}
           </TableBody>
         </Table>
+        <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableCard>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title="New Salary Grade" className="max-w-2xl">

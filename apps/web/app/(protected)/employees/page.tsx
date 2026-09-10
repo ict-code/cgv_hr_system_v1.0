@@ -3,26 +3,41 @@
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import type { Employee } from "@/lib/types";
+import type { Employee, PaginatedResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { Pagination } from "@/components/ui/pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
 
+const PAGE_SIZE = 20;
+
 export default function EmployeesPage() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+  if (debouncedSearch) query.set("search", debouncedSearch);
 
   const employees = useQuery({
-    queryKey: ["employees"],
-    queryFn: () => apiFetch<Employee[]>("/employees"),
+    queryKey: ["employees", page, debouncedSearch],
+    queryFn: () => apiFetch<PaginatedResult<Employee>>(`/employees?${query.toString()}`),
   });
 
-  const rows = (employees.data ?? []).filter((e) => {
-    if (!search) return true;
-    const haystack = `${e.lastName} ${e.firstName} ${e.idNo ?? ""} ${e.biometricId ?? ""} ${e.empNo}`.toLowerCase();
-    return haystack.includes(search.toLowerCase());
-  });
+  const rows = employees.data?.data ?? [];
+  const total = employees.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <TableCard
@@ -86,6 +101,7 @@ export default function EmployeesPage() {
           ))}
         </TableBody>
       </Table>
+      <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
     </TableCard>
   );
 }

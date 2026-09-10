@@ -1,16 +1,30 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@egaps/db';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateRoleDto } from './dto/create-role.dto.js';
+import type { ListQueryDto, PaginatedResult } from '../common/dto/list-query.dto.js';
 
 @Injectable()
 export class RolesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.prisma.role.findMany({
-      include: { permissions: { include: { permission: true } } },
-      orderBy: { name: 'asc' },
-    });
+  async findAll(query: ListQueryDto): Promise<PaginatedResult<unknown>> {
+    const where: Prisma.RoleWhereInput = query.search
+      ? { name: { contains: query.search, mode: 'insensitive' } }
+      : {};
+
+    const [data, total] = await Promise.all([
+      this.prisma.role.findMany({
+        where,
+        include: { permissions: { include: { permission: true } } },
+        orderBy: { name: 'asc' },
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+      }),
+      this.prisma.role.count({ where }),
+    ]);
+
+    return { data, total, page: query.page, pageSize: query.pageSize };
   }
 
   findAllPermissions() {

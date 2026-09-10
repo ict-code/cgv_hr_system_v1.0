@@ -1,3 +1,10 @@
+export type PaginatedResult<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 export const APPOINTMENT_STATUSES = [
   "AP", "CT", "DT", "EL", "FT", "NE", "OA", "PR", "PX", "RA", "RC", "RI",
   "RM", "RN", "RS", "RT", "SA", "TM", "TN", "TO", "TX",

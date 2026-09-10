@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchAll } from "@/lib/api";
 import type { Department, Division, EmployeeDetail, EmployeeSkill } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,7 +66,7 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
 
   const departments = useQuery({
     queryKey: ["/departments"],
-    queryFn: () => apiFetch<Department[]>("/departments"),
+    queryFn: () => apiFetchAll<Department>("/departments"),
   });
 
   const divisions = useQuery({
