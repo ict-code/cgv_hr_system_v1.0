@@ -1,10 +1,8 @@
 import {
-  Award,
   Banknote,
   BarChart3,
   Bell,
   Bookmark,
-  BookOpen,
   Briefcase,
   Building2,
   CalendarClock,
@@ -58,15 +56,10 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Personnel File",
     icon: UserRound,
     items: [
+      // Family Background / Educational Background / Eligibility / Work
+      // Experience / Training are tabs on the employee detail page now
+      // (reached from here), not separate nav entries.
       { label: "Personal Data Sheet Records", href: "/employees", icon: UserRound },
-      // These five are tabs on the employee detail page now, not standalone
-      // screens — same entry point as Personal Data Sheet Records: pick an
-      // employee first, then use the tab strip on their detail page.
-      { label: "Family Background File", href: "/employees", icon: Heart },
-      { label: "Educational Background File", href: "/employees", icon: GraduationCap },
-      { label: "Eligibility Records File", href: "/employees", icon: Award },
-      { label: "Work Experience File", href: "/employees", icon: Briefcase },
-      { label: "Training/Seminars Attended Records", href: "/employees", icon: BookOpen },
       { label: "Update Employment Status Process", href: soon("Update Employment Status Process", "Personnel File"), icon: UserCog },
     ],
   },
