@@ -5,9 +5,6 @@ import type { CreateSalaryGradeTableDto } from './dto/create-salary-grade-table.
 import type { UpdateSalaryGradeTableDto } from './dto/update-salary-grade-table.dto.js';
 import type { ListQueryDto, PaginatedResult } from '../common/dto/list-query.dto.js';
 
-const GRADE_COUNT = 50;
-const STEP_COUNT = 10;
-
 @Injectable()
 export class SalaryGradeTablesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -30,39 +27,16 @@ export class SalaryGradeTablesService {
     return { data, total, page: query.page, pageSize: query.pageSize };
   }
 
-  // A brand-new table starts pre-populated with the standard 1-50 grade x
-  // 1-10 step grid (all amounts 0) so it's immediately usable in the same
-  // editable grid as an imported table, instead of requiring 50 separate
-  // "add a grade" round-trips before anyone can enter figures.
+  // A brand-new table starts empty — grades only appear once someone adds
+  // one via "New Grade", rather than pre-filling 50 zero-value rows nobody
+  // asked for.
   create(dto: CreateSalaryGradeTableDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const table = await tx.salaryGradeTable.create({
-        data: {
-          name: dto.name,
-          effectiveDate: dto.effectiveDate ? new Date(dto.effectiveDate) : undefined,
-          description: dto.description,
-        },
-      });
-
-      const grades = await tx.salaryGrade.createManyAndReturn({
-        data: Array.from({ length: GRADE_COUNT }, (_, i) => ({
-          gradeNo: i + 1,
-          salaryGradeTableId: table.id,
-        })),
-      });
-
-      await tx.salaryStep.createMany({
-        data: grades.flatMap((grade) =>
-          Array.from({ length: STEP_COUNT }, (_, i) => ({
-            salaryGradeId: grade.id,
-            stepNo: i + 1,
-            amount: 0,
-            monthlyRate: 0,
-          })),
-        ),
-      });
-
-      return table;
+    return this.prisma.salaryGradeTable.create({
+      data: {
+        name: dto.name,
+        effectiveDate: dto.effectiveDate ? new Date(dto.effectiveDate) : undefined,
+        description: dto.description,
+      },
     });
   }
 

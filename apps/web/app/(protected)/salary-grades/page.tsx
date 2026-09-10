@@ -460,7 +460,7 @@ export default function SalaryGradesPage() {
           </div>
           {!editingTable && (
             <p className="text-xs text-[var(--color-muted)]">
-              Creates a full grade 1-50 x step 1-10 grid, all starting at 0, ready to fill in.
+              Starts empty — use "New Grade" afterward to add rows to it.
             </p>
           )}
           {(createTable.isError || updateTable.isError) && (
