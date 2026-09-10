@@ -20,7 +20,7 @@ export default function EmployeesPage() {
 
   const rows = (employees.data ?? []).filter((e) => {
     if (!search) return true;
-    const haystack = `${e.lastName} ${e.firstName} ${e.empNo}`.toLowerCase();
+    const haystack = `${e.lastName} ${e.firstName} ${e.idNo ?? ""} ${e.biometricId ?? ""} ${e.empNo}`.toLowerCase();
     return haystack.includes(search.toLowerCase());
   });
 
@@ -29,7 +29,7 @@ export default function EmployeesPage() {
       title="Employees"
       search={search}
       onSearchChange={setSearch}
-      searchPlaceholder="Search name or employee no."
+      searchPlaceholder="Search name or employee ID"
       headerExtra={
         <Link href="/employees/new">
           <Button size="sm">
@@ -42,7 +42,7 @@ export default function EmployeesPage() {
       <Table bare>
         <TableHeader>
           <TableRow>
-            <TableHead>Emp. No.</TableHead>
+            <TableHead>Employee ID</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Department</TableHead>
           </TableRow>
@@ -73,7 +73,7 @@ export default function EmployeesPage() {
             <TableRow key={e.id} className="cursor-pointer">
               <TableCell>
                 <Link href={`/employees/${e.id}`} className="block text-brand-600 hover:underline">
-                  {e.empNo}
+                  {e.idNo || e.biometricId || e.empNo}
                 </Link>
               </TableCell>
               <TableCell>

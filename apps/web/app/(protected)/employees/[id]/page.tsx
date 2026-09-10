@@ -88,7 +88,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
           {emp.lastName}, {emp.firstName} {emp.middleName ?? ""}
         </h1>
         <p className="text-sm text-[var(--color-muted)]">
-          Emp. No. {emp.empNo} — {emp.department?.deptDesc ?? "No department"}
+          Employee ID {emp.idNo || emp.biometricId || emp.empNo} — {emp.department?.deptDesc ?? "No department"}
         </p>
       </div>
 
