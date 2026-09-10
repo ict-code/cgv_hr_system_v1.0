@@ -41,7 +41,7 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/employees");
+    router.push("/dashboard");
     router.refresh();
   }
 

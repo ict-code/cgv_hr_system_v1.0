@@ -23,21 +23,21 @@ function step(name, fn) {
   steps.push({ name, fn });
 }
 
-step('login redirects to /employees', async (page) => {
+step('login redirects to /dashboard', async (page) => {
   await page.goto(`${BASE}/login`);
   await page.getByLabel(/login id/i).fill(LOGIN_ID);
   await page.getByLabel(/^password$/i).fill(PASSWORD);
   await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL(/\/employees$/, { timeout: 10_000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 10_000 });
 });
 
-step('employees list renders real content', async (page) => {
-  await page.waitForSelector('text=/employees/i', { timeout: 10_000 });
+step('dashboard renders real content', async (page) => {
+  await page.waitForSelector('text=/welcome/i', { timeout: 10_000 });
   const bodyText = await page.textContent('body');
-  if (!bodyText || bodyText.trim().length < 50) throw new Error('Employees page body looks empty');
+  if (!bodyText || bodyText.trim().length < 50) throw new Error('Dashboard page body looks empty');
 });
 
-for (const path of ['/departments', '/positions', '/plantilla', '/salary-grades', '/users', '/roles']) {
+for (const path of ['/employees', '/departments', '/positions', '/plantilla', '/salary-grades', '/users', '/roles']) {
   step(`${path} renders without a client error`, async (page) => {
     const errors = [];
     page.on('pageerror', (err) => errors.push(err.message));

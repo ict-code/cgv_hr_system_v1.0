@@ -16,6 +16,7 @@ import {
   Heart,
   IdCard,
   Landmark,
+  LayoutDashboard,
   ListChecks,
   MapPin,
   MapPinned,
@@ -52,6 +53,11 @@ function soon(title: string, section: string): string {
 }
 
 export const NAV_SECTIONS: NavSection[] = [
+  {
+    title: null,
+    icon: LayoutDashboard,
+    items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
   {
     title: "Personnel File",
     icon: UserRound,
