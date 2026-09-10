@@ -41,8 +41,8 @@ export function TableCard({
   }, [filterOpen]);
 
   return (
-    <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)] p-4">
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-bold text-foreground">{title}</h2>
         <div className="flex items-center gap-2">
           {onSearchChange && (
@@ -72,7 +72,7 @@ export function TableCard({
           {headerExtra}
         </div>
       </div>
-      {children}
-    </Card>
+      <Card className="overflow-hidden">{children}</Card>
+    </div>
   );
 }
