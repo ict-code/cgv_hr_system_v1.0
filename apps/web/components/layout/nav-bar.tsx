@@ -81,7 +81,7 @@ export function NavBar() {
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
               </button>
               {isOpen && (
-                <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-md border border-[var(--color-border)] bg-white py-1.5 shadow-lg">
+                <div className="absolute left-0 top-full z-20 mt-1 max-h-[75vh] w-80 overflow-y-auto rounded-md border border-[var(--color-border)] bg-white py-1.5 shadow-lg">
                   {section.items.map((item) => {
                     const itemActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                     const ItemIcon = item.icon;
@@ -90,11 +90,11 @@ export function NavBar() {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "flex items-center gap-2.5 px-3 py-1.5 text-sm",
+                          "flex items-start gap-2.5 px-3 py-1.5 text-sm leading-snug",
                           itemActive ? "bg-brand-50 text-brand-700" : "text-foreground hover:bg-slate-50",
                         )}
                       >
-                        <ItemIcon className={cn("h-4 w-4", itemActive ? "text-brand-500" : "text-slate-400")} strokeWidth={2} />
+                        <ItemIcon className={cn("h-4 w-4 shrink-0 translate-y-0.5", itemActive ? "text-brand-500" : "text-slate-400")} strokeWidth={2} />
                         {item.label}
                       </Link>
                     );
