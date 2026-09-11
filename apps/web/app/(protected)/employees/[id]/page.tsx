@@ -7,7 +7,7 @@ import Link from "next/link";
 import { use, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiFetch, apiFetchAll } from "@/lib/api";
+import { apiDownload, apiFetch, apiFetchAll } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -33,7 +33,6 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmployeeRecordsTab, type RecordColumn, type RecordField } from "@/components/employee-records-tab";
-import { ServiceRecordDocument } from "@/components/service-record-document";
 import { cn } from "@/lib/utils";
 import { PersonalDataTab } from "./personal-data-tab";
 import { FamilyBackgroundTab } from "./family-background-tab";
@@ -562,28 +561,79 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
 }
 
 function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [certifiedDate, setCertifiedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [signatoryName, setSignatoryName] = useState("");
+  const [signatoryPosition, setSignatoryPosition] = useState("");
   const employmentStatuses = useQuery({
     queryKey: ["/employment-statuses"],
     queryFn: () => apiFetchAll<EmploymentStatusCode>("/employment-statuses"),
   });
 
+  const exportRecord = useMutation({
+    mutationFn: () =>
+      apiDownload(
+        `/employees/${employee.id}/service-record/export`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            certifiedDate: certifiedDate ? formatDate(certifiedDate) : undefined,
+            signatoryName: signatoryName || undefined,
+            signatoryPosition: signatoryPosition || undefined,
+          }),
+        },
+        `${employee.lastName}-${employee.firstName}-service-record.docx`,
+      ),
+  });
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2 print:hidden">
-        <Button variant="outline" size="sm" onClick={() => setPreviewOpen((v) => !v)}>
-          {previewOpen ? "Hide Preview" : "Preview"}
-        </Button>
-        <Button size="sm" onClick={() => window.print()}>
-          Export to PDF
-        </Button>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Export service record</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="certifiedDate">Certified date</Label>
+              <Input
+                id="certifiedDate"
+                type="date"
+                value={certifiedDate}
+                onChange={(e) => setCertifiedDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="signatoryName">Signatory name</Label>
+              <Input
+                id="signatoryName"
+                value={signatoryName}
+                onChange={(e) => setSignatoryName(e.target.value)}
+                placeholder="e.g. Juan Dela Cruz"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="signatoryPosition">Signatory position</Label>
+              <Input
+                id="signatoryPosition"
+                value={signatoryPosition}
+                onChange={(e) => setSignatoryPosition(e.target.value)}
+                placeholder="e.g. City HR Officer"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button size="sm" onClick={() => exportRecord.mutate()} disabled={exportRecord.isPending}>
+              {exportRecord.isPending ? "Exporting…" : "Export Service Record"}
+            </Button>
+            {exportRecord.isError && (
+              <p className="text-sm text-[var(--color-danger)]">{(exportRecord.error as Error).message}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className={cn(previewOpen ? "block" : "hidden", "print:block", "rounded-lg border border-[var(--color-border)] bg-slate-50 p-6 print:border-0 print:bg-white print:p-0")}>
-        <ServiceRecordDocument employee={employee} employmentStatuses={employmentStatuses.data ?? []} />
-      </div>
-
-    <Card className="overflow-hidden print:hidden">
+    <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>Service record</CardTitle>
       </CardHeader>

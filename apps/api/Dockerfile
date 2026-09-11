@@ -23,5 +23,6 @@ FROM base AS runtime
 ENV NODE_ENV=production
 COPY --from=build /repo/out ./
 COPY --from=build /repo/apps/api/dist ./dist
+COPY --from=build /repo/apps/api/templates ./templates
 EXPOSE 3001
 CMD ["node", "dist/main.js"]

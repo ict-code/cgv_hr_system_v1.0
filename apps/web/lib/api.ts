@@ -27,3 +27,26 @@ export async function apiFetchAll<T>(path: string): Promise<T[]> {
   const result = await apiFetch<{ data: T[] }>(`${path}${separator}pageSize=1000`);
   return result.data;
 }
+
+/**
+ * For endpoints that return a binary file (e.g. a generated .docx) rather
+ * than JSON. Triggers a browser download of the response body.
+ */
+export async function apiDownload(path: string, init: RequestInit, filename: string): Promise<void> {
+  const res = await fetch(`${API_URL}${path}`, { ...init, cache: "no-store" });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(body.message ?? `Request failed: ${res.status}`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
