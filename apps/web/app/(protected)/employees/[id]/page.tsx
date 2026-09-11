@@ -12,6 +12,10 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_STATUSES,
+  PAY_MODE_LABELS,
+  PAY_MODES,
+  WORK_LEVEL_LABELS,
+  WORK_LEVELS,
   type Department,
   type EmployeeDetail,
   type EmployeeEducation,
@@ -47,6 +51,8 @@ const changeSchema = z.object({
   departmentId: z.string().optional(),
   positionId: z.string().optional(),
   employmentStatus: z.string().optional(),
+  payMode: z.enum(PAY_MODES).optional().or(z.literal("")),
+  workLevel: z.enum(WORK_LEVELS).optional().or(z.literal("")),
   actualSalary: optionalNumber(z.coerce.number()),
   monthlyRate: optionalNumber(z.coerce.number()),
   grade: optionalNumber(z.coerce.number().int()),
@@ -306,6 +312,8 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
           departmentId: values.departmentId || undefined,
           positionId: values.positionId || undefined,
           employmentStatus: values.employmentStatus || undefined,
+          payMode: values.payMode || undefined,
+          workLevel: values.workLevel || undefined,
           effectDate: new Date(values.effectDate).toISOString(),
         }),
       }),
@@ -328,6 +336,26 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
                 <dt className="text-xs text-[var(--color-muted)]">Status</dt>
                 <dd className="mt-0.5">
                   {currentAppointment.status ? <AppointmentStatusBadge status={currentAppointment.status} /> : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-muted)]">Employment status</dt>
+                <dd className="mt-0.5">
+                  {employmentStatuses.data?.find((s) => s.code === currentAppointment.employmentStatus)?.description ??
+                    currentAppointment.employmentStatus ??
+                    "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-muted)]">Term of payment</dt>
+                <dd className="mt-0.5">
+                  {currentAppointment.payMode ? PAY_MODE_LABELS[currentAppointment.payMode] : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[var(--color-muted)]">Occupational level</dt>
+                <dd className="mt-0.5">
+                  {currentAppointment.workLevel ? WORK_LEVEL_LABELS[currentAppointment.workLevel] : "—"}
                 </dd>
               </div>
               <div>
@@ -416,6 +444,30 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
                 {employmentStatuses.data?.map((s) => (
                   <option key={s.id} value={s.code}>
                     {s.description}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="payMode">Term of payment</Label>
+              <Select id="payMode" {...register("payMode")}>
+                <option value="">(unchanged)</option>
+                {PAY_MODES.map((m) => (
+                  <option key={m} value={m}>
+                    {PAY_MODE_LABELS[m]}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="workLevel">Occupational level</Label>
+              <Select id="workLevel" {...register("workLevel")}>
+                <option value="">(unchanged)</option>
+                {WORK_LEVELS.map((l) => (
+                  <option key={l} value={l}>
+                    {WORK_LEVEL_LABELS[l]}
                   </option>
                 ))}
               </Select>
