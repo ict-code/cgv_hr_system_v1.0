@@ -70,6 +70,7 @@ const TABS = [
   { key: "eligibility", label: "Eligibility" },
   { key: "work-experience", label: "Work Experience" },
   { key: "training", label: "Training/Seminars" },
+  { key: "service-record", label: "Service Record" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -132,6 +133,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       {tab === "eligibility" && <EligibilityTab employee={emp} />}
       {tab === "work-experience" && <WorkExperienceTab employee={emp} />}
       {tab === "training" && <TrainingTab employee={emp} />}
+      {tab === "service-record" && <ServiceRecordTab employee={emp} />}
     </div>
   );
 }
@@ -554,49 +556,58 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
           </TableBody>
         </Table>
       </Card>
-
-      <Card className="overflow-hidden">
-        <CardHeader>
-          <CardTitle>Service record</CardTitle>
-        </CardHeader>
-        <Table bare>
-          <TableHeader>
-            <TableRow>
-              <TableHead>From</TableHead>
-              <TableHead>To</TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Salary</TableHead>
-              <TableHead>Office / Department</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {emp.serviceRecords.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-[var(--color-muted)]">
-                  No service history yet.
-                </TableCell>
-              </TableRow>
-            )}
-            {emp.serviceRecords.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell>{formatDate(s.startDate)}</TableCell>
-                <TableCell>{s.endDate ? formatDate(s.endDate) : "Present"}</TableCell>
-                <TableCell>{s.positionSnapshot ?? "—"}</TableCell>
-                <TableCell>
-                  {employmentStatuses.data?.find((es) => es.code === s.empStatusSnapshot)?.description ??
-                    s.empStatusSnapshot ??
-                    "—"}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {s.salarySnapshot ? `${formatCurrency(s.salarySnapshot)}${s.salaryUnitSnapshot ? ` / ${s.salaryUnitSnapshot}` : ""}` : "—"}
-                </TableCell>
-                <TableCell className="text-[var(--color-muted)]">{s.departmentSnapshot ?? "—"}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
     </div>
+  );
+}
+
+function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
+  const employmentStatuses = useQuery({
+    queryKey: ["/employment-statuses"],
+    queryFn: () => apiFetchAll<EmploymentStatusCode>("/employment-statuses"),
+  });
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader>
+        <CardTitle>Service record</CardTitle>
+      </CardHeader>
+      <Table bare>
+        <TableHeader>
+          <TableRow>
+            <TableHead>From</TableHead>
+            <TableHead>To</TableHead>
+            <TableHead>Position</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Salary</TableHead>
+            <TableHead>Office / Department</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {employee.serviceRecords.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-[var(--color-muted)]">
+                No service history yet.
+              </TableCell>
+            </TableRow>
+          )}
+          {employee.serviceRecords.map((s) => (
+            <TableRow key={s.id}>
+              <TableCell>{formatDate(s.startDate)}</TableCell>
+              <TableCell>{s.endDate ? formatDate(s.endDate) : "Present"}</TableCell>
+              <TableCell>{s.positionSnapshot ?? "—"}</TableCell>
+              <TableCell>
+                {employmentStatuses.data?.find((es) => es.code === s.empStatusSnapshot)?.description ??
+                  s.empStatusSnapshot ??
+                  "—"}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {s.salarySnapshot ? `${formatCurrency(s.salarySnapshot)}${s.salaryUnitSnapshot ? ` / ${s.salaryUnitSnapshot}` : ""}` : "—"}
+              </TableCell>
+              <TableCell className="text-[var(--color-muted)]">{s.departmentSnapshot ?? "—"}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
   );
 }
