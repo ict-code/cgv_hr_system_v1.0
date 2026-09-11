@@ -12,6 +12,17 @@ const INACTIVE_STATUSES = new Set(['DT', 'RS', 'RT', 'TO']);
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async removeCurrent(employeeId: string) {
+    const current = await this.prisma.appointment.findFirst({
+      where: { employeeId },
+      orderBy: { effectDate: 'desc' },
+    });
+    if (!current) {
+      throw new NotFoundException(`Employee ${employeeId} has no appointment on record`);
+    }
+    return this.prisma.appointment.delete({ where: { id: current.id } });
+  }
+
   findAppointments(employeeId: string) {
     return this.prisma.appointment.findMany({
       where: { employeeId },
@@ -80,6 +91,8 @@ export class AppointmentsService {
         monthlyRate: dto.monthlyRate ?? current?.monthlyRate ?? null,
         grade: dto.grade ?? current?.grade ?? null,
         stepNo: dto.stepNo ?? current?.stepNo ?? null,
+        startDate: dto.startDate ?? current?.startDate ?? null,
+        endDate: dto.endDate ?? current?.endDate ?? null,
         effectDate: dto.effectDate,
         sMode: INACTIVE_STATUSES.has(dto.status) ? 2 : 1,
       };

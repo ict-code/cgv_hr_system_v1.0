@@ -11,6 +11,26 @@ export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: ListEmployeesDto): Promise<PaginatedResult<unknown>> {
+    // Real employees can carry more than one Appointment row (the original
+    // bulk import loaded full history, not just the current state — the
+    // in-place-update behavior only applies to changes made through this
+    // app going forward). So `appointments: { some: {...} }` would match on
+    // ANY historical status, not necessarily the current one. Instead:
+    // find each employee's true latest appointment (by effectDate) first,
+    // then check whether THAT ONE has a matching employmentStatus.
+    let employmentStatusEmployeeIds: string[] | undefined;
+    if (query.employmentStatus?.length) {
+      const latest = await this.prisma.$queryRaw<{ employeeId: string }[]>`
+        SELECT "employeeId" FROM (
+          SELECT DISTINCT ON (a."employeeId") a."employeeId", a."employmentStatus"
+          FROM appointments a
+          ORDER BY a."employeeId", a."effectDate" DESC NULLS LAST
+        ) latest
+        WHERE latest."employmentStatus" = ANY(${query.employmentStatus})
+      `;
+      employmentStatusEmployeeIds = latest.map((r) => r.employeeId);
+    }
+
     const where: Prisma.EmployeeWhereInput = {
       ...(query.search
         ? {
@@ -24,6 +44,7 @@ export class EmployeesService {
         : {}),
       ...(query.departmentId ? { departmentId: query.departmentId } : {}),
       ...(query.inactive !== undefined ? { inactive: query.inactive } : {}),
+      ...(employmentStatusEmployeeIds ? { id: { in: employmentStatusEmployeeIds } } : {}),
     };
 
     const [data, total] = await Promise.all([

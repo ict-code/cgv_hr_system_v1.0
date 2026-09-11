@@ -12,6 +12,7 @@ import {
   APPOINTMENT_STATUSES,
   PAY_MODE_LABELS,
   PAY_MODES,
+  REGULAR_ELECTED_STATUSES,
   WORK_LEVEL_LABELS,
   WORK_LEVELS,
   type Department,
@@ -82,6 +83,7 @@ export default function PlantillaAppointmentsPage() {
     page: String(page),
     pageSize: String(PAGE_SIZE),
     inactive: String(activeFilter === "inactive"),
+    employmentStatus: REGULAR_ELECTED_STATUSES.join(","),
   });
   if (departmentId) query.set("departmentId", departmentId);
   if (debouncedSearch) query.set("search", debouncedSearch);
@@ -98,7 +100,7 @@ export default function PlantillaAppointmentsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Plantilla Appointment — Regular/Elected</h1>
+        <h1 className="text-xl font-bold text-foreground">Regular/Elected</h1>
         <p className="text-sm text-[var(--color-muted)]">Browse by office and record appointment changes.</p>
       </div>
 

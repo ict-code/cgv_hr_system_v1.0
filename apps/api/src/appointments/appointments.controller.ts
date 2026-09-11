@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermissions } from '../auth/require-permissions.decorator.js';
@@ -45,6 +45,22 @@ export class AppointmentsController {
       module: 'appointments',
       action: 'record-change',
       description: `Recorded appointment change for employee ${employeeId}: status=${dto.status}, effectDate=${dto.effectDate.toISOString().slice(0, 10)}`,
+      outcome: 'success',
+    });
+
+    return result;
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Delete('appointments')
+  async removeCurrent(@Param('employeeId') employeeId: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.appointments.removeCurrent(employeeId);
+
+    await this.audit.log({
+      userId: user.id,
+      module: 'appointments',
+      action: 'delete-current',
+      description: `Deleted current appointment for employee ${employeeId}`,
       outcome: 'success',
     });
 

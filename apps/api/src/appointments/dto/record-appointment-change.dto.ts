@@ -66,6 +66,19 @@ export class RecordAppointmentChangeDto {
   @IsInt()
   stepNo?: number;
 
+  // Contract period ("Period Covered" on the Casual/Contractual screens) —
+  // legacy Appointment.Start-Date/End-Date. Optional since permanent/elected
+  // appointments aren't time-bound.
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  startDate?: Date;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  endDate?: Date;
+
   /// Legacy Efficient-Rate: 1=Excellent .. 5=Unsatisfactory, captured on the
   /// change-log entry only (CHGAPP.P line 48-51) — not a field on Appointment itself.
   @IsOptional()

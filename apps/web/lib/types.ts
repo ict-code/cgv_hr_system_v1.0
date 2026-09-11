@@ -29,6 +29,17 @@ export const WORK_LEVEL_LABELS: Record<string, string> = {
   FIRST_LEVEL: "First Level", SECOND_LEVEL: "Second Level", THIRD_LEVEL: "Third Level",
 };
 
+// Legacy EmployType codes (see Master Data > Employment Status File),
+// grouped into the three legacy appointment screens. Real Appointment data
+// only ever carries P/CS/CL/CT/EL (2026-09-11) — the rest are here so any
+// future real usage still lands in the right screen. Co-Terminous (CT)
+// occupies a real plantilla item like Permanent/Elected does (legacy's
+// plantilla table has no separate Type for it), so it's grouped with
+// Regular/Elected rather than Contractual.
+export const REGULAR_ELECTED_STATUSES = ["P", "EL", "CT"];
+export const CASUAL_STATUSES = ["CS"];
+export const CONTRACTUAL_STATUSES = ["CL", "JO", "SC", "MC", "CC", "CO"];
+
 export type AppointmentStatusCode = {
   id: string;
   code: string;
@@ -149,6 +160,8 @@ export type Appointment = {
   employmentStatus: string | null;
   payMode: string | null;
   workLevel: string | null;
+  startDate: string | null;
+  endDate: string | null;
 };
 
 export type AppointmentChangeLog = {

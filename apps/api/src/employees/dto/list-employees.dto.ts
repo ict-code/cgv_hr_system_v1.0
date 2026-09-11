@@ -11,4 +11,11 @@ export class ListEmployeesDto extends ListQueryDto {
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   inactive?: boolean;
+
+  // Comma-separated EmploymentStatusCode codes (e.g. "P,EL,CT") — filters to
+  // employees whose current appointment's employmentStatus is one of these.
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.split(',').filter(Boolean) : value))
+  @IsString({ each: true })
+  employmentStatus?: string[];
 }
