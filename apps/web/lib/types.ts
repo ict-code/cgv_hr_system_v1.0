@@ -30,6 +30,12 @@ export type AppointmentStatusCode = {
   active: boolean;
 };
 
+export type EmploymentStatusCode = {
+  id: string;
+  code: string;
+  description: string;
+};
+
 export type Department = {
   id: string;
   deptCode: number;

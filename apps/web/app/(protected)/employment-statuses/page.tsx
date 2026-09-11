@@ -1,0 +1,212 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import type { EmploymentStatusCode, PaginatedResult } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Pagination } from "@/components/ui/pagination";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { TableCard } from "@/components/ui/table-card";
+
+const PAGE_SIZE = 20;
+const emptyForm = { code: "", description: "" };
+
+export default function EmploymentStatusesPage() {
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUser();
+  const permissions = currentUser?.permissions ?? [];
+  const canCreate = permissions.includes("employmentStatuses:create");
+  const canEdit = permissions.includes("employmentStatuses:edit");
+  const canDelete = permissions.includes("employmentStatuses:delete");
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+  if (debouncedSearch) query.set("search", debouncedSearch);
+
+  const list = useQuery({
+    queryKey: ["/employment-statuses", page, debouncedSearch],
+    queryFn: () => apiFetch<PaginatedResult<EmploymentStatusCode>>(`/employment-statuses?${query.toString()}`),
+  });
+
+  const rows = list.data?.data ?? [];
+  const total = list.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const create = useMutation({
+    mutationFn: () =>
+      apiFetch<EmploymentStatusCode>("/employment-statuses", {
+        method: "POST",
+        body: JSON.stringify(form),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/employment-statuses"] });
+      setForm(emptyForm);
+      setDialogOpen(false);
+    },
+  });
+
+  const update = useMutation({
+    mutationFn: () =>
+      apiFetch<EmploymentStatusCode>(`/employment-statuses/${editingId}`, {
+        method: "PATCH",
+        body: JSON.stringify(form),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/employment-statuses"] });
+      setForm(emptyForm);
+      setEditingId(null);
+      setDialogOpen(false);
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => apiFetch(`/employment-statuses/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/employment-statuses"] }),
+  });
+
+  function openNewDialog() {
+    setEditingId(null);
+    setForm(emptyForm);
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(row: EmploymentStatusCode) {
+    setEditingId(row.id);
+    setForm({ code: row.code, description: row.description });
+    setDialogOpen(true);
+  }
+
+  function handleDelete(row: EmploymentStatusCode) {
+    if (window.confirm(`Delete employment status "${row.code}"?`)) remove.mutate(row.id);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <TableCard
+        title="Employment Statuses"
+        search={search}
+        onSearchChange={setSearch}
+        headerExtra={
+          canCreate && (
+            <Button size="sm" onClick={openNewDialog}>
+              <Plus className="h-3.5 w-3.5" />
+              New
+            </Button>
+          )
+        }
+      >
+        <Table bare>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Code</TableHead>
+              <TableHead>Description</TableHead>
+              {(canEdit || canDelete) && <TableHead className="w-20" />}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {list.isLoading && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
+                  Loading…
+                </TableCell>
+              </TableRow>
+            )}
+            {!list.isLoading && rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
+                  No records yet.
+                </TableCell>
+              </TableRow>
+            )}
+            {rows.map((row) => (
+              <TableRow key={row.id}>
+                <TableCell className="font-semibold">{row.code}</TableCell>
+                <TableCell>{row.description}</TableCell>
+                {(canEdit || canDelete) && (
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => openEditDialog(row)}
+                          aria-label={`Edit ${row.code}`}
+                          className="text-[var(--color-muted)] hover:text-foreground"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(row)}
+                          aria-label={`Delete ${row.code}`}
+                          className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      </TableCard>
+
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} title={editingId ? "Edit Employment Status" : "New Employment Status"}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (editingId) update.mutate();
+            else create.mutate();
+          }}
+          className="flex flex-col gap-3"
+        >
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="code">Code</Label>
+            <Input id="code" required value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="description">Description</Label>
+            <Input
+              id="description"
+              required
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          {(create.isError || update.isError) && (
+            <p className="text-sm text-[var(--color-danger)]">{((create.error ?? update.error) as Error).message}</p>
+          )}
+          <Button type="submit" disabled={create.isPending || update.isPending} className="mt-2 w-fit">
+            {create.isPending || update.isPending ? "Saving…" : "Save"}
+          </Button>
+        </form>
+      </Dialog>
+    </div>
+  );
+}

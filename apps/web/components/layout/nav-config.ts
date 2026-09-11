@@ -139,7 +139,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "System Parameter", href: soon("System Parameter", "Master Data"), icon: Settings },
       { label: "Offices File", href: "/departments", icon: Landmark },
       { label: "Positions File", href: "/positions", icon: Briefcase },
-      { label: "Employment Status File", href: soon("Employment Status File", "Master Data"), icon: UserCog },
+      { label: "Employment Status File", href: "/employment-statuses", icon: UserCog },
       { label: "Appointment Status File", href: "/appointment-statuses", icon: FileText },
       { label: "Salary Grade File", href: "/salary-grades", icon: Banknote },
       { label: "Work Assignments File", href: soon("Work Assignments File", "Master Data"), icon: Briefcase },

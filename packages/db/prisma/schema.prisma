@@ -118,6 +118,20 @@ model AppointmentStatusCode {
   @@map("appointment_status_codes")
 }
 
+/// Legacy EmployType table (emp-status/emp-desc) — the employee's tenure
+/// classification (Permanent, Casual, Job Order, ...), distinct from
+/// AppointmentStatusCode which tracks the *action* taken on an appointment.
+model EmploymentStatusCode {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employment_status_codes")
+}
+
 model Division {
   id           String   @id @default(cuid())
   divCode      Int      @unique

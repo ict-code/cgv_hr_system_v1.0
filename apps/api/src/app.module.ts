@@ -15,6 +15,7 @@ import { SalaryGradesModule } from './salary-grades/salary-grades.module.js';
 import { SalaryGradeTablesModule } from './salary-grade-tables/salary-grade-tables.module.js';
 import { PersonnelRecordsModule } from './personnel-records/personnel-records.module.js';
 import { AppointmentStatusesModule } from './appointment-statuses/appointment-statuses.module.js';
+import { EmploymentStatusesModule } from './employment-statuses/employment-statuses.module.js';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AppointmentStatusesModule } from './appointment-statuses/appointment-st
     SalaryGradeTablesModule,
     PersonnelRecordsModule,
     AppointmentStatusesModule,
+    EmploymentStatusesModule,
   ],
   controllers: [HealthController],
 })
