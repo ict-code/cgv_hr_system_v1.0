@@ -74,7 +74,7 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: ClipboardList,
     items: [
       { label: "Plantilla Positions File", href: "/plantilla", icon: ClipboardList },
-      { label: "Plantilla Appointment — Regular/Elected", href: soon("Plantilla Appointment — Regular/Elected", "Plantilla & Appointments File"), icon: FileText },
+      { label: "Plantilla Appointment — Regular/Elected", href: "/plantilla-appointments", icon: FileText },
       { label: "Consultant/Honorary Appointment File", href: soon("Consultant/Honorary Appointment File", "Plantilla & Appointments File"), icon: IdCard },
       { label: "Setup Employment Period", href: soon("Setup Employment Period", "Plantilla & Appointments File — Casual/Job Order"), icon: CalendarClock },
       { label: "Casual Plantilla Appointment File", href: soon("Casual Plantilla Appointment File", "Plantilla & Appointments File — Casual/Job Order"), icon: FileText },

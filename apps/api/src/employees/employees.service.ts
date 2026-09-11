@@ -3,29 +3,37 @@ import type { Prisma } from '@egaps/db';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto.js';
-import type { ListQueryDto, PaginatedResult } from '../common/dto/list-query.dto.js';
+import type { ListEmployeesDto } from './dto/list-employees.dto.js';
+import type { PaginatedResult } from '../common/dto/list-query.dto.js';
 
 @Injectable()
 export class EmployeesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: ListQueryDto): Promise<PaginatedResult<unknown>> {
-    const where: Prisma.EmployeeWhereInput = query.search
-      ? {
-          OR: [
-            { lastName: { contains: query.search, mode: 'insensitive' } },
-            { firstName: { contains: query.search, mode: 'insensitive' } },
-            { idNo: { contains: query.search, mode: 'insensitive' } },
-            { biometricId: { contains: query.search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+  async findAll(query: ListEmployeesDto): Promise<PaginatedResult<unknown>> {
+    const where: Prisma.EmployeeWhereInput = {
+      ...(query.search
+        ? {
+            OR: [
+              { lastName: { contains: query.search, mode: 'insensitive' } },
+              { firstName: { contains: query.search, mode: 'insensitive' } },
+              { idNo: { contains: query.search, mode: 'insensitive' } },
+              { biometricId: { contains: query.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(query.departmentId ? { departmentId: query.departmentId } : {}),
+      ...(query.inactive !== undefined ? { inactive: query.inactive } : {}),
+    };
 
     const [data, total] = await Promise.all([
       this.prisma.employee.findMany({
         where,
         orderBy: { lastName: 'asc' },
-        include: { department: true },
+        include: {
+          department: true,
+          appointments: { take: 1, orderBy: { effectDate: 'desc' }, include: { position: true } },
+        },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
       }),

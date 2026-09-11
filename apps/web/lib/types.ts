@@ -19,6 +19,16 @@ export const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
   TN: "Transfer (entry)", TO: "Transfer Out", TX: "Transfer Dept",
 };
 
+export const PAY_MODES = ["DAILY", "WEEKLY", "SEMI_MONTHLY", "MONTHLY"] as const;
+export const PAY_MODE_LABELS: Record<string, string> = {
+  DAILY: "Daily", WEEKLY: "Weekly", SEMI_MONTHLY: "Semi-Monthly", MONTHLY: "Monthly",
+};
+
+export const WORK_LEVELS = ["FIRST_LEVEL", "SECOND_LEVEL", "THIRD_LEVEL"] as const;
+export const WORK_LEVEL_LABELS: Record<string, string> = {
+  FIRST_LEVEL: "First Level", SECOND_LEVEL: "Second Level", THIRD_LEVEL: "Third Level",
+};
+
 export type AppointmentStatusCode = {
   id: string;
   code: string;
@@ -119,6 +129,7 @@ export type Employee = {
   division?: Division | null;
   salaryGradeTableId: string | null;
   salaryGradeTable?: SalaryGradeTable | null;
+  appointments?: Appointment[];
 };
 
 export type Appointment = {
@@ -129,11 +140,15 @@ export type Appointment = {
   positionId: string | null;
   department?: Department | null;
   position?: Position | null;
+  itemNo: string | null;
+  authSalary: string | null;
   actualSalary: string | null;
   monthlyRate: string | null;
   grade: number | null;
   stepNo: number | null;
   employmentStatus: string | null;
+  payMode: string | null;
+  workLevel: string | null;
 };
 
 export type AppointmentChangeLog = {
