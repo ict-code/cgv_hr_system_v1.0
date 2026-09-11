@@ -129,7 +129,8 @@ model Division {
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id])
 
-  employees Employee[]
+  employees      Employee[]
+  plantillaItems Plantilla[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -154,8 +155,14 @@ model Position {
 }
 
 model Plantilla {
-  id           String   @id @default(cuid())
-  itemNo       String   @unique // legacy Item-No — DBM-prescribed plantilla identifier, preserved unchanged (DATA_MIGRATION_ANALYSIS.md §5)
+  id     String @id @default(cuid())
+  // legacy Item-No — DBM-prescribed plantilla identifier, preserved unchanged
+  // (DATA_MIGRATION_ANALYSIS.md §5). NOT globally unique: legacy's own
+  // indexes key it as Type+Dept-Code+Div-Code+Item-No — confirmed against
+  // real data, 21 of 855 real item numbers are reused across departments
+  // (e.g. "178" exists once under dept 27 and again, unrelated, under dept
+  // 59). Unique per department instead, see @@unique below.
+  itemNo String
   oldItemNo    String?
   pageNo       Int?
   actualSalary Decimal? @db.Decimal(14, 2)
@@ -168,10 +175,20 @@ model Plantilla {
   department   Department @relation(fields: [departmentId], references: [id])
   positionId   String?
   position     Position?  @relation(fields: [positionId], references: [id])
+  // Real data: only 59 of 855 real plantilla items carry a non-zero legacy
+  // Div-Code — kept here for schema completeness but left unpopulated until
+  // a real Division File/master-data import exists (no Division CRUD yet).
+  divisionId   String?
+  division     Division?  @relation(fields: [divisionId], references: [id])
+  // The item's current incumbent — legacy plantilla.Emp-No, the real direct
+  // source of "who holds this item", not derived from Appointment.itemNo.
+  employeeId   String?
+  employee     Employee?  @relation(fields: [employeeId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([departmentId, itemNo])
   @@map("plantillas")
 }
 
@@ -333,6 +350,7 @@ model Employee {
   workExperience       EmployeeWorkExperience[]
   trainingRecords      EmployeeTraining[]
   skills               EmployeeSkill[]
+  plantillaItems       Plantilla[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

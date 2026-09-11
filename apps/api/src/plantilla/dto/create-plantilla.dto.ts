@@ -13,6 +13,14 @@ export class CreatePlantillaDto {
 
   @IsOptional()
   @IsString()
+  divisionId?: string;
+
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsString()
   oldItemNo?: string;
 
   @IsOptional()

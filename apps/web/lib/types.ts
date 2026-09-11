@@ -261,10 +261,15 @@ export type UserRow = {
 export type Plantilla = {
   id: string;
   itemNo: string;
+  oldItemNo: string | null;
   departmentId: string;
   positionId: string | null;
+  divisionId: string | null;
+  employeeId: string | null;
   department?: Department | null;
   position?: Position | null;
+  division?: Division | null;
+  employee?: Employee | null;
   actualSalary: string | null;
   authSalary: string | null;
   grade: number | null;
