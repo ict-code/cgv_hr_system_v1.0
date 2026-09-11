@@ -2,6 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { use, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -84,6 +86,13 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
   return (
     <div className="flex flex-col gap-4">
       <div>
+        <Link
+          href="/employees"
+          className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-muted)] hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to Employees
+        </Link>
         <h1 className="text-xl font-bold text-foreground">
           {emp.lastName}, {emp.firstName} {emp.middleName ?? ""}
         </h1>
