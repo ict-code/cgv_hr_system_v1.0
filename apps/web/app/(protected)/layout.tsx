@@ -8,7 +8,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
         <Topbar />
         <NavBar />
       </div>
-      <main className="flex-1 overflow-x-auto px-6 py-4">{children}</main>
+      <main className="flex-1 overflow-x-auto px-6 py-4">
+        <div className="mx-auto max-w-7xl">{children}</div>
+      </main>
     </div>
   );
 }

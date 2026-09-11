@@ -75,7 +75,7 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-bold text-foreground">{firstName ? `Welcome, ${firstName}` : "Welcome"}</h1>
-        <p className="text-sm text-[var(--color-muted)]">City Government of Vigan — EGAPS Modern Personnel Information System</p>
+        <p className="text-sm text-[var(--color-muted)]">City Government of Vigan — Personnel Information System</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
