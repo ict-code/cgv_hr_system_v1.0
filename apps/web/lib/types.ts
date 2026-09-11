@@ -184,7 +184,11 @@ export type ServiceRecord = {
   endDate: string | null;
   positionSnapshot: string | null;
   departmentSnapshot: string | null;
+  empStatusSnapshot: string | null;
   salarySnapshot: string | null;
+  salaryUnitSnapshot: string | null;
+  grade: number | null;
+  step: number | null;
 };
 
 export type Dependent = {

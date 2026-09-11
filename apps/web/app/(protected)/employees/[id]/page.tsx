@@ -562,25 +562,35 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
         <Table bare>
           <TableHeader>
             <TableRow>
-              <TableHead>Period</TableHead>
+              <TableHead>From</TableHead>
+              <TableHead>To</TableHead>
               <TableHead>Position</TableHead>
-              <TableHead>Department</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Salary</TableHead>
+              <TableHead>Office / Department</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {emp.serviceRecords.length === 0 && (
               <TableRow>
-                <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
+                <TableCell colSpan={6} className="text-center text-[var(--color-muted)]">
                   No service history yet.
                 </TableCell>
               </TableRow>
             )}
             {emp.serviceRecords.map((s) => (
               <TableRow key={s.id}>
-                <TableCell>
-                  {formatDate(s.startDate)} – {s.endDate ? formatDate(s.endDate) : "present"}
-                </TableCell>
+                <TableCell>{formatDate(s.startDate)}</TableCell>
+                <TableCell>{s.endDate ? formatDate(s.endDate) : "Present"}</TableCell>
                 <TableCell>{s.positionSnapshot ?? "—"}</TableCell>
+                <TableCell>
+                  {employmentStatuses.data?.find((es) => es.code === s.empStatusSnapshot)?.description ??
+                    s.empStatusSnapshot ??
+                    "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {s.salarySnapshot ? `${formatCurrency(s.salarySnapshot)}${s.salaryUnitSnapshot ? ` / ${s.salaryUnitSnapshot}` : ""}` : "—"}
+                </TableCell>
                 <TableCell className="text-[var(--color-muted)]">{s.departmentSnapshot ?? "—"}</TableCell>
               </TableRow>
             ))}

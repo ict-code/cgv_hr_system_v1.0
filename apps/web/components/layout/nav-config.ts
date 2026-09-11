@@ -84,7 +84,10 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: "Service Records File",
     icon: FileText,
-    items: [{ label: "Service Record File", href: soon("Service Record File", "Service Records File"), icon: FileText }],
+    // Reuses Personnel File's employee list + detail (Overview tab's
+    // Service record table) rather than a separate legacy-style two-pane
+    // screen — same underlying ServiceRecord data either way.
+    items: [{ label: "Service Record File", href: "/employees", icon: FileText }],
   },
   {
     title: "Miscellaneous Schedule",
