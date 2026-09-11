@@ -33,6 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EmployeeRecordsTab, type RecordColumn, type RecordField } from "@/components/employee-records-tab";
+import { ServiceRecordDocument } from "@/components/service-record-document";
 import { cn } from "@/lib/utils";
 import { PersonalDataTab } from "./personal-data-tab";
 import { FamilyBackgroundTab } from "./family-background-tab";
@@ -92,7 +93,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="print:hidden">
         <Link
           href="/employees"
           className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-muted)] hover:text-foreground"
@@ -108,7 +109,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-1 border-b border-[var(--color-border)]">
+      <div className="flex flex-wrap gap-1 border-b border-[var(--color-border)] print:hidden">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -561,13 +562,28 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
 }
 
 function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const employmentStatuses = useQuery({
     queryKey: ["/employment-statuses"],
     queryFn: () => apiFetchAll<EmploymentStatusCode>("/employment-statuses"),
   });
 
   return (
-    <Card className="overflow-hidden">
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 print:hidden">
+        <Button variant="outline" size="sm" onClick={() => setPreviewOpen((v) => !v)}>
+          {previewOpen ? "Hide Preview" : "Preview"}
+        </Button>
+        <Button size="sm" onClick={() => window.print()}>
+          Export to PDF
+        </Button>
+      </div>
+
+      <div className={cn(previewOpen ? "block" : "hidden", "print:block", "rounded-lg border border-[var(--color-border)] bg-slate-50 p-6 print:border-0 print:bg-white print:p-0")}>
+        <ServiceRecordDocument employee={employee} employmentStatuses={employmentStatuses.data ?? []} />
+      </div>
+
+    <Card className="overflow-hidden print:hidden">
       <CardHeader>
         <CardTitle>Service record</CardTitle>
       </CardHeader>
@@ -609,5 +625,6 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
         </TableBody>
       </Table>
     </Card>
+    </div>
   );
 }

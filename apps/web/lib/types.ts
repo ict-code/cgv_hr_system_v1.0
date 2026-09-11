@@ -187,6 +187,7 @@ export type ServiceRecord = {
   empStatusSnapshot: string | null;
   salarySnapshot: string | null;
   salaryUnitSnapshot: string | null;
+  actlSalarySnapshot: string | null;
   grade: number | null;
   step: number | null;
 };

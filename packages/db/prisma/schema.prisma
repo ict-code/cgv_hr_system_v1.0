@@ -631,6 +631,10 @@ model ServiceRecord {
   empStatusSnapshot  String?
   salarySnapshot     Decimal? @db.Decimal(14, 2)
   salaryUnitSnapshot String?
+  // Annual salary — the Service Record certificate (CSC form) always shows
+  // salary "/a" (per annum), distinct from salarySnapshot/salaryUnitSnapshot
+  // above which is monthly (used elsewhere in the app).
+  actlSalarySnapshot Decimal? @db.Decimal(14, 2)
   grade              Int?
   step               Int?
   itemNo             String?

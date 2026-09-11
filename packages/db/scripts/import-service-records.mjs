@@ -130,6 +130,7 @@ for (const [empNo, empRows] of byEmpNo) {
       empStatusSnapshot: s(row.empStatus),
       salarySnapshot: monthlyRate || actlSalary || undefined,
       salaryUnitSnapshot: monthlyRate || actlSalary ? 'Monthly' : undefined,
+      actlSalarySnapshot: actlSalary || undefined,
       grade: i(row.grade),
       step: i(row.step),
       itemNo: s(row.itemNo),
