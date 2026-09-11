@@ -12,11 +12,11 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   APPOINTMENT_STATUS_LABELS,
   APPOINTMENT_STATUSES,
-  EMPLOYMENT_STATUSES,
   type Department,
   type EmployeeDetail,
   type EmployeeEducation,
   type EmployeeEligibility,
+  type EmploymentStatusCode,
   type EmployeeTraining,
   type EmployeeWorkExperience,
   type Position,
@@ -46,7 +46,7 @@ const changeSchema = z.object({
   effectDate: z.string().min(1, "Required"),
   departmentId: z.string().optional(),
   positionId: z.string().optional(),
-  employmentStatus: z.enum(EMPLOYMENT_STATUSES).optional().or(z.literal("")),
+  employmentStatus: z.string().optional(),
   actualSalary: optionalNumber(z.coerce.number()),
   monthlyRate: optionalNumber(z.coerce.number()),
   grade: optionalNumber(z.coerce.number().int()),
@@ -285,6 +285,11 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
     queryFn: () => apiFetchAll<Position>("/positions"),
   });
 
+  const employmentStatuses = useQuery({
+    queryKey: ["/employment-statuses"],
+    queryFn: () => apiFetchAll<EmploymentStatusCode>("/employment-statuses"),
+  });
+
   const {
     register,
     handleSubmit,
@@ -408,9 +413,9 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
               <Label htmlFor="employmentStatus">Employment status</Label>
               <Select id="employmentStatus" {...register("employmentStatus")}>
                 <option value="">(unchanged)</option>
-                {EMPLOYMENT_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                {employmentStatuses.data?.map((s) => (
+                  <option key={s.id} value={s.code}>
+                    {s.description}
                   </option>
                 ))}
               </Select>

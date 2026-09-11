@@ -19,10 +19,6 @@ export const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
   TN: "Transfer (entry)", TO: "Transfer Out", TX: "Transfer Dept",
 };
 
-export const EMPLOYMENT_STATUSES = [
-  "REGULAR", "CASUAL", "CONTRACTUAL", "CO_TERMINOUS", "PROBATIONARY", "DEVOLVED",
-] as const;
-
 export type AppointmentStatusCode = {
   id: string;
   code: string;

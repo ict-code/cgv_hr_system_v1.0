@@ -32,16 +32,6 @@ datasource db {
 // data carries 12 codes beyond the 21 the live `appointstatus` lookup table
 // itself has, which ruled out a hard enum here.
 
-/// From Appointment.Emp-Status (PERSONNEL_ANALYSIS.md §2): 1=Regular..6=Devolved.
-enum EmploymentStatus {
-  REGULAR
-  CASUAL
-  CONTRACTUAL
-  CO_TERMINOUS
-  PROBATIONARY
-  DEVOLVED
-}
-
 /// From Appointment.Pay-Mode: 1=Daily, 2=Weekly, 3=Semi-Monthly, 4=Monthly.
 enum PayMode {
   DAILY
@@ -481,8 +471,12 @@ model Appointment {
   // enum nor even the legacy AppointStatus lookup table itself. Legacy itself
   // has no enforced FK from Appointment.Status-Code to AppointStatus, which is
   // exactly how those orphaned codes exist in the first place.
+  // employmentStatus is a plain String, not an enum — real production data
+  // (2026-09-11) confirms it's a raw EmployType.emp-status code (P/CS/CL/CT/EL,
+  // see Master Data > Employment Status File / EmploymentStatusCode), not the
+  // 1-6 numeric scheme PERSONNEL_ANALYSIS.md guessed at before real DB access.
   status           String?
-  employmentStatus EmploymentStatus?
+  employmentStatus String?
   appointType      AppointType?
   payMode          PayMode?
   workLevel        WorkLevel?

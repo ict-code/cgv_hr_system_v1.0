@@ -70,11 +70,9 @@ const WORK_LEVELS = { 1: 'FIRST_LEVEL', 2: 'SECOND_LEVEL', 3: 'THIRD_LEVEL' };
 // doc comment. Real Appointment.appoint-type only ever takes 1/2/3.
 const APPOINT_TYPES = { 1: 'REGULAR', 2: 'CASUAL', 3: 'CONTRACT_OF_SERVICE' };
 // Appointment.Emp-Status is a raw EmployType.emp-status code, not the 1-6
-// numeric scheme PERSONNEL_ANALYSIS.md describes (that's a UI-combo value,
-// not what's actually persisted). Real values found: CL, CS, CT, EL, P.
-// EL (Elected) has no matching EmploymentStatus enum member — left unmapped
-// rather than forcing a wrong one (only 20 of 1,188 rows).
-const EMP_STATUS_MAP = { P: 'REGULAR', CS: 'CASUAL', CL: 'CONTRACTUAL', CT: 'CO_TERMINOUS' };
+// numeric scheme PERSONNEL_ANALYSIS.md described (that was a guess made
+// before real DB access) — stored as-is now (see Employment Status File /
+// EmploymentStatusCode master data). Real values found: CL, CS, CT, EL, P.
 
 async function main() {
   console.log(`${dryRun ? '[DRY RUN] ' : ''}Importing legacy Personnel data from ${exportDir}`);
@@ -293,7 +291,7 @@ async function main() {
       positionId: posIdByCode.get(i(row.positionCode)),
       itemNo: s(row.itemNo),
       status: s(row.statusCode),
-      employmentStatus: EMP_STATUS_MAP[row.empStatusRaw],
+      employmentStatus: s(row.empStatusRaw),
       appointType: APPOINT_TYPES[i(row.appointType)],
       payMode: PAY_MODES[i(row.payMode)],
       workLevel: WORK_LEVELS[i(row.workLevel)],

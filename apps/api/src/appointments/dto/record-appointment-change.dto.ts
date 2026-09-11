@@ -1,4 +1,4 @@
-import { AppointType, EmploymentStatus, PayMode, WorkLevel } from '@egaps/db';
+import { AppointType, PayMode, WorkLevel } from '@egaps/db';
 import { Type } from 'class-transformer';
 import {
   IsDate,
@@ -32,9 +32,11 @@ export class RecordAppointmentChangeDto {
   @IsString()
   itemNo?: string;
 
+  // Plain string, not an enum — real production data confirms this is a raw
+  // EmployType.emp-status code (see Master Data > Employment Status File).
   @IsOptional()
-  @IsEnum(EmploymentStatus)
-  employmentStatus?: EmploymentStatus;
+  @IsString()
+  employmentStatus?: string;
 
   @IsOptional()
   @IsEnum(AppointType)
