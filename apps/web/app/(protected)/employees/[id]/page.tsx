@@ -25,6 +25,7 @@ import {
   type EmployeeTraining,
   type EmployeeWorkExperience,
   type Position,
+  type SalaryGrade,
 } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { AppointmentStatusBadge } from "@/components/ui/badge";
@@ -575,8 +576,8 @@ const SERVICE_RECORD_COLUMNS = [
   { header: "Employment Status", key: "empStatusSnapshot", dropdown: "empStatus" },
   { header: "Monthly Salary", key: "salarySnapshot" },
   { header: "Annual Salary", key: "actlSalarySnapshot" },
-  { header: "Salary Grade", key: "grade" },
-  { header: "Step", key: "step" },
+  { header: "Salary Grade", key: "grade", dropdown: "grade" },
+  { header: "Step", key: "step", dropdown: "step" },
   { header: "Item No.", key: "itemNo" },
   { header: "Exit Date (MM/DD/YYYY)", key: "exitDate" },
   { header: "Exit Cause", key: "exitCause" },
@@ -621,6 +622,8 @@ async function downloadServiceRecordTemplate(masters: {
   positions: Position[];
   departments: Department[];
   employmentStatuses: EmploymentStatusCode[];
+  gradeMax: number;
+  stepMax: number;
 }) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Service Record");
@@ -634,9 +637,17 @@ async function downloadServiceRecordTemplate(masters: {
   const departmentNames = Array.from(new Set(masters.departments.map((d) => d.deptDesc))).sort();
   const empStatusOptions = masters.employmentStatuses.map((s) => `${s.code} - ${s.description}`).sort();
 
+  // Grade/step have no dedicated master-list endpoint — they're plain ints
+  // on ServiceRecord, not FKs — so the dropdown is just the real min..max
+  // range seen across the Salary Grade Table data (currently 1-50 / 1-10).
+  const grades = Array.from({ length: masters.gradeMax }, (_, i) => i + 1);
+  const steps = Array.from({ length: masters.stepMax }, (_, i) => i + 1);
+
   positionNames.forEach((name, i) => lists.getCell(i + 1, 1).value = name);
   departmentNames.forEach((name, i) => lists.getCell(i + 1, 2).value = name);
   empStatusOptions.forEach((name, i) => lists.getCell(i + 1, 3).value = name);
+  grades.forEach((n, i) => lists.getCell(i + 1, 4).value = n);
+  steps.forEach((n, i) => lists.getCell(i + 1, 5).value = n);
 
   const DATA_ROWS = 500;
   function applyDropdown(key: string, listRange: string) {
@@ -648,6 +659,8 @@ async function downloadServiceRecordTemplate(masters: {
   if (positionNames.length > 0) applyDropdown("positionSnapshot", `Lists!$A$1:$A$${positionNames.length}`);
   if (departmentNames.length > 0) applyDropdown("departmentSnapshot", `Lists!$B$1:$B$${departmentNames.length}`);
   if (empStatusOptions.length > 0) applyDropdown("empStatusSnapshot", `Lists!$C$1:$C$${empStatusOptions.length}`);
+  applyDropdown("grade", `Lists!$D$1:$D$${grades.length}`);
+  applyDropdown("step", `Lists!$E$1:$E$${steps.length}`);
 
   const buffer = await workbook.xlsx.writeBuffer();
   downloadBlob(
@@ -775,6 +788,10 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
   const positions = useQuery({
     queryKey: ["/positions"],
     queryFn: () => apiFetchAll<Position>("/positions"),
+  });
+  const salaryGrades = useQuery({
+    queryKey: ["/salary-grades"],
+    queryFn: () => apiFetchAll<SalaryGrade>("/salary-grades"),
   });
 
   const exportRecord = useMutation({
@@ -1138,9 +1155,9 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
         <div className="flex flex-col gap-4">
           <p className="text-sm text-[var(--color-muted)]">
             Download the blank template, fill in the missing service history rows in Excel, then upload the
-            completed file here. Position/Designation, Office/Department, and Employment Status are dropdown lists
-            in the template to prevent typos — pick from the list rather than typing. Dates must be in MM/DD/YYYY
-            format.
+            completed file here. Position/Designation, Office/Department, Employment Status, Salary Grade, and Step
+            are dropdown lists in the template to prevent typos — click the cell and use the dropdown arrow, or
+            start typing to jump to a matching entry. Dates must be in MM/DD/YYYY format.
           </p>
 
           <Button
@@ -1148,13 +1165,18 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
             variant="outline"
             size="sm"
             className="w-fit"
-            onClick={() =>
+            onClick={() => {
+              const grades = salaryGrades.data ?? [];
+              const gradeMax = Math.max(1, ...grades.map((g) => g.gradeNo));
+              const stepMax = Math.max(1, ...grades.flatMap((g) => g.steps.map((s) => s.stepNo)));
               downloadServiceRecordTemplate({
                 positions: positions.data ?? [],
                 departments: departments.data ?? [],
                 employmentStatuses: employmentStatuses.data ?? [],
-              })
-            }
+                gradeMax,
+                stepMax,
+              });
+            }}
           >
             Download template (.xlsx)
           </Button>
