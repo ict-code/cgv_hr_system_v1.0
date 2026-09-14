@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchAll } from "@/lib/api";
+import { exportRowsToExcel } from "@/lib/export-excel";
 import type { Employee, PaginatedResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
@@ -17,6 +18,34 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const all = await apiFetchAll<Employee>("/employees");
+      await exportRowsToExcel({
+        filename: "employees.xlsx",
+        sheetName: "Employees",
+        columns: [
+          { header: "Employee ID", key: "employeeId" },
+          { header: "Last Name", key: "lastName" },
+          { header: "First Name", key: "firstName" },
+          { header: "Middle Name", key: "middleName" },
+          { header: "Department", key: "department" },
+        ],
+        rows: all.map((e) => ({
+          employeeId: e.idNo || e.biometricId || e.empNo,
+          lastName: e.lastName,
+          firstName: e.firstName,
+          middleName: e.middleName ?? "",
+          department: e.department?.deptDesc ?? "",
+        })),
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -46,12 +75,18 @@ export default function EmployeesPage() {
       onSearchChange={setSearch}
       searchPlaceholder="Search name or employee ID"
       headerExtra={
-        <Link href="/employees/new">
-          <Button size="sm">
-            <Plus className="h-3.5 w-3.5" />
-            New employee
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? "Exporting…" : "Export"}
           </Button>
-        </Link>
+          <Link href="/employees/new">
+            <Button size="sm">
+              <Plus className="h-3.5 w-3.5" />
+              New employee
+            </Button>
+          </Link>
+        </div>
       }
     >
       <Table bare>
