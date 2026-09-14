@@ -32,6 +32,7 @@ export default function EmployeesPage() {
           { header: "Last Name", key: "lastName" },
           { header: "First Name", key: "firstName" },
           { header: "Middle Name", key: "middleName" },
+          { header: "Position", key: "position" },
           { header: "Department", key: "department" },
         ],
         rows: all.map((e) => ({
@@ -39,6 +40,7 @@ export default function EmployeesPage() {
           lastName: e.lastName,
           firstName: e.firstName,
           middleName: e.middleName ?? "",
+          position: e.appointments?.[0]?.position?.positionDesc ?? "",
           department: e.department?.deptDesc ?? "",
         })),
       });
@@ -94,27 +96,28 @@ export default function EmployeesPage() {
           <TableRow>
             <TableHead>Employee ID</TableHead>
             <TableHead>Name</TableHead>
+            <TableHead>Position</TableHead>
             <TableHead>Department</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {employees.isLoading && (
             <TableRow>
-              <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
+              <TableCell colSpan={4} className="text-center text-[var(--color-muted)]">
                 Loading…
               </TableCell>
             </TableRow>
           )}
           {employees.isError && (
             <TableRow>
-              <TableCell colSpan={3} className="text-center text-[var(--color-danger)]">
+              <TableCell colSpan={4} className="text-center text-[var(--color-danger)]">
                 {(employees.error as Error).message}
               </TableCell>
             </TableRow>
           )}
           {!employees.isLoading && rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-center text-[var(--color-muted)]">
+              <TableCell colSpan={4} className="text-center text-[var(--color-muted)]">
                 No employees yet.
               </TableCell>
             </TableRow>
@@ -130,6 +133,9 @@ export default function EmployeesPage() {
                 <Link href={`/employees/${e.id}`} className="block">
                   {e.lastName}, {e.firstName}
                 </Link>
+              </TableCell>
+              <TableCell className="text-[var(--color-muted)]">
+                {e.appointments?.[0]?.position?.positionDesc ?? "—"}
               </TableCell>
               <TableCell className="text-[var(--color-muted)]">{e.department?.deptDesc ?? "—"}</TableCell>
             </TableRow>
