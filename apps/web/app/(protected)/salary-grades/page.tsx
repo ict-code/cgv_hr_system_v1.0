@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { apiFetch, apiFetchAll } from "@/lib/api";
+import { exportRowsToExcel } from "@/lib/export-excel";
 import { formatCurrency } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import type { PaginatedResult, SalaryGrade, SalaryGradeTable } from "@/lib/types";
@@ -124,6 +125,7 @@ export default function SalaryGradesPage() {
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState(false);
   const [tableForm, setTableForm] = useState(emptyTableForm);
+  const [exporting, setExporting] = useState(false);
 
   const tables = useQuery({
     queryKey: ["/salary-grade-tables"],
@@ -252,6 +254,32 @@ export default function SalaryGradesPage() {
     deleteTable.mutate();
   }
 
+  async function handleExport() {
+    if (!selectedTableId || !selectedTable) return;
+    setExporting(true);
+    try {
+      const all = await apiFetchAll<SalaryGrade>(`/salary-grades?salaryGradeTableId=${selectedTableId}`);
+      const stepColumns = Array.from({ length: STEP_COUNT }, (_, i) => ({
+        header: `Step ${i + 1}`,
+        key: `step${i + 1}`,
+      }));
+      await exportRowsToExcel({
+        filename: `salary-grade-file-${selectedTable.name.toLowerCase().replace(/\s+/g, "-")}.xlsx`,
+        sheetName: selectedTable.name,
+        columns: [{ header: "Grade No.", key: "gradeNo" }, ...stepColumns],
+        rows: all.map((g) => {
+          const row: Record<string, unknown> = { gradeNo: g.gradeNo };
+          for (let i = 1; i <= STEP_COUNT; i++) {
+            row[`step${i}`] = Number(g.steps.find((s) => s.stepNo === i)?.amount ?? 0);
+          }
+          return row;
+        }),
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--color-border)] bg-white p-3">
@@ -274,6 +302,12 @@ export default function SalaryGradesPage() {
             </option>
           ))}
         </Select>
+        {selectedTable && (
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+            <Download className="h-3.5 w-3.5" />
+            {exporting ? "Exporting…" : "Export"}
+          </Button>
+        )}
         {canEdit && selectedTable && (
           <Button variant="outline" size="sm" onClick={openEditTableDialog}>
             <Pencil className="h-3.5 w-3.5" />

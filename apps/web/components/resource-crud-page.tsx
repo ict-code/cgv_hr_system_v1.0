@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchAll } from "@/lib/api";
+import { exportRowsToExcel } from "@/lib/export-excel";
 import type { PaginatedResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -56,6 +57,7 @@ export function ResourceCrudPage<T extends { id: string }>({
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -100,6 +102,21 @@ export function ResourceCrudPage<T extends { id: string }>({
   const total = list.data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const all = await apiFetchAll<T>(apiPath);
+      await exportRowsToExcel({
+        filename: `${title.toLowerCase().replace(/\s+/g, "-")}.xlsx`,
+        sheetName: title,
+        columns: columns.map((c) => ({ header: c.label, key: c.key })),
+        rows: all.map((row) => Object.fromEntries(columns.map((c) => [c.key, row[c.key] ?? ""]))),
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <TableCard
@@ -107,10 +124,16 @@ export function ResourceCrudPage<T extends { id: string }>({
         search={searchKeys ? search : undefined}
         onSearchChange={searchKeys ? setSearch : undefined}
         headerExtra={
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
-            New
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+              <Download className="h-3.5 w-3.5" />
+              {exporting ? "Exporting…" : "Export"}
+            </Button>
+            <Button size="sm" onClick={() => setDialogOpen(true)}>
+              <Plus className="h-3.5 w-3.5" />
+              New
+            </Button>
+          </div>
         }
       >
         <Table bare>

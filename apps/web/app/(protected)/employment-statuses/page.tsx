@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchAll } from "@/lib/api";
+import { exportRowsToExcel } from "@/lib/export-excel";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import type { EmploymentStatusCode, PaginatedResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export default function EmploymentStatusesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -102,6 +104,24 @@ export default function EmploymentStatusesPage() {
     if (window.confirm(`Delete employment status "${row.code}"?`)) remove.mutate(row.id);
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const all = await apiFetchAll<EmploymentStatusCode>("/employment-statuses");
+      await exportRowsToExcel({
+        filename: "employment-status-file.xlsx",
+        sheetName: "Employment Statuses",
+        columns: [
+          { header: "Code", key: "code" },
+          { header: "Description", key: "description" },
+        ],
+        rows: all.map((r) => ({ code: r.code, description: r.description })),
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <TableCard
@@ -109,12 +129,18 @@ export default function EmploymentStatusesPage() {
         search={search}
         onSearchChange={setSearch}
         headerExtra={
-          canCreate && (
-            <Button size="sm" onClick={openNewDialog}>
-              <Plus className="h-3.5 w-3.5" />
-              New
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+              <Download className="h-3.5 w-3.5" />
+              {exporting ? "Exporting…" : "Export"}
             </Button>
-          )
+            {canCreate && (
+              <Button size="sm" onClick={openNewDialog}>
+                <Plus className="h-3.5 w-3.5" />
+                New
+              </Button>
+            )}
+          </div>
         }
       >
         <Table bare>
