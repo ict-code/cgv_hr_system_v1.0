@@ -9,9 +9,8 @@ import { z } from "zod";
 import { apiFetch, apiFetchAll } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
-  APPOINTMENT_STATUS_LABELS,
-  APPOINTMENT_STATUSES,
   CASUAL_STATUSES,
+  type AppointmentStatusCode,
   type Department,
   type Employee,
   type PaginatedResult,
@@ -36,7 +35,7 @@ function optionalNumber(schema: z.ZodNumber) {
 }
 
 const formSchema = z.object({
-  status: z.enum(APPOINTMENT_STATUSES),
+  status: z.string().min(1, "Required"),
   effectDate: z.string().min(1, "Required"),
   departmentId: z.string().optional(),
   positionId: z.string().optional(),
@@ -80,6 +79,11 @@ export default function CasualAppointmentsPage() {
   const positions = useQuery({
     queryKey: ["/positions"],
     queryFn: () => apiFetchAll<Position>("/positions"),
+  });
+
+  const appointmentStatuses = useQuery({
+    queryKey: ["/appointment-statuses"],
+    queryFn: () => apiFetchAll<AppointmentStatusCode>("/appointment-statuses"),
   });
 
   const query = new URLSearchParams({
@@ -303,9 +307,9 @@ export default function CasualAppointmentsPage() {
               <Label htmlFor="ca-status">Change type</Label>
               <Select id="ca-status" {...register("status")}>
                 <option value="">—</option>
-                {APPOINTMENT_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {APPOINTMENT_STATUS_LABELS[s]}
+                {appointmentStatuses.data?.map((s) => (
+                  <option key={s.id} value={s.code}>
+                    {s.code} - {s.description}
                   </option>
                 ))}
               </Select>

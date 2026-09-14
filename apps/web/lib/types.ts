@@ -5,20 +5,6 @@ export type PaginatedResult<T> = {
   pageSize: number;
 };
 
-export const APPOINTMENT_STATUSES = [
-  "AP", "CT", "DT", "EL", "FT", "NE", "OA", "PR", "PX", "RA", "RC", "RI",
-  "RM", "RN", "RS", "RT", "SA", "TM", "TN", "TO", "TX",
-] as const;
-
-export const APPOINTMENT_STATUS_LABELS: Record<string, string> = {
-  AP: "Appointed", CT: "Co-Terminous", DT: "Death", EL: "Elected",
-  FT: "Full Time to Part Time", NE: "New", OA: "Original Appointment",
-  PR: "Promotion", PX: "Promotion Ext", RA: "Reappointment", RC: "Reclass",
-  RI: "Reinstated", RM: "Re-employment", RN: "Renewal", RS: "Resigned",
-  RT: "Retired", SA: "Salary Adjustment", TM: "Temporary Appointment",
-  TN: "Transfer (entry)", TO: "Transfer Out", TX: "Transfer Dept",
-};
-
 export const PAY_MODES = ["DAILY", "WEEKLY", "SEMI_MONTHLY", "MONTHLY"] as const;
 export const PAY_MODE_LABELS: Record<string, string> = {
   DAILY: "Daily", WEEKLY: "Weekly", SEMI_MONTHLY: "Semi-Monthly", MONTHLY: "Monthly",

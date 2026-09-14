@@ -1,5 +1,10 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { HTMLAttributes } from "react";
+import { apiFetchAll } from "@/lib/api";
+import type { AppointmentStatusCode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", {
@@ -27,7 +32,25 @@ const INACTIVE_APPOINTMENT_STATUSES = new Set(["DT", "RS", "RT", "TO"]);
 const NEW_APPOINTMENT_STATUSES = new Set(["AP", "NE", "OA", "EL", "RA", "RI", "RM", "RN", "TN"]);
 
 export function AppointmentStatusBadge({ status }: { status: string }) {
-  if (INACTIVE_APPOINTMENT_STATUSES.has(status)) return <Badge variant="danger">{status}</Badge>;
-  if (NEW_APPOINTMENT_STATUSES.has(status)) return <Badge variant="success">{status}</Badge>;
-  return <Badge variant="info">{status}</Badge>;
+  // Cached across every badge instance on the page — one request, not one
+  // per badge. Live lookup against Master Data > Appointment Status File so
+  // an edited/added description shows up here without a code change.
+  const { data } = useQuery({
+    queryKey: ["/appointment-statuses"],
+    queryFn: () => apiFetchAll<AppointmentStatusCode>("/appointment-statuses"),
+    staleTime: 5 * 60 * 1000,
+  });
+  const description = data?.find((s) => s.code === status)?.description;
+
+  const variant = INACTIVE_APPOINTMENT_STATUSES.has(status)
+    ? "danger"
+    : NEW_APPOINTMENT_STATUSES.has(status)
+      ? "success"
+      : "info";
+
+  return (
+    <Badge variant={variant} title={description}>
+      {status}
+    </Badge>
+  );
 }
