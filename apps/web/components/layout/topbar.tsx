@@ -26,7 +26,7 @@ export function Topbar() {
         <div className="flex items-center gap-2.5">
           <Image src="/vigan-seal.png" alt="City of Vigan seal" width={36} height={36} className="h-9 w-9" priority />
           <div>
-            <p className="text-sm font-semibold leading-tight text-foreground">EGAPS Modern — Personnel</p>
+            <p className="text-sm font-semibold leading-tight text-foreground">CGV - HRAS</p>
             <p className="text-xs leading-tight text-[var(--color-muted)]">City Government of Vigan</p>
           </div>
         </div>
