@@ -2,9 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, Upload } from "lucide-react";
 import Link from "next/link";
-import { use, useState } from "react";
+import Papa from "papaparse";
+import { use, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiDownload, apiFetch, apiFetchAll } from "@/lib/api";
@@ -28,6 +29,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AppointmentStatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -560,7 +562,113 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
   );
 }
 
+// Exact CSV header text HR fills in — also used as the Papa Parse row keys
+// (header: true), so the template download and the upload parser share one
+// source of truth for column names.
+const SERVICE_RECORD_CSV_HEADERS = [
+  "From Date (MM/DD/YYYY)",
+  "To Date (MM/DD/YYYY)",
+  "Position/Designation",
+  "Office/Department",
+  "Division",
+  "Employment Status",
+  "Monthly Salary",
+  "Annual Salary",
+  "Salary Grade",
+  "Step",
+  "Item No.",
+  "Exit Date (MM/DD/YYYY)",
+  "Exit Cause",
+  "Leave of Absence",
+  "Remarks",
+] as const;
+
+function downloadServiceRecordCsvTemplate() {
+  const csv = SERVICE_RECORD_CSV_HEADERS.map((h) => `"${h}"`).join(",") + "\r\n";
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "service-record-template.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+type ServiceRecordPayload = {
+  startDate: string;
+  endDate?: string;
+  positionSnapshot?: string;
+  departmentSnapshot?: string;
+  divisionSnapshot?: string;
+  empStatusSnapshot?: string;
+  salarySnapshot?: number;
+  actlSalarySnapshot?: number;
+  grade?: number;
+  step?: number;
+  itemNo?: string;
+  exitDate?: string;
+  exitCause?: string;
+  leaveAbsence?: string;
+  remarks?: string;
+};
+
+// Accepts both the CSV's instructed MM/DD/YYYY and a plain <input type="date">
+// value (YYYY-MM-DD) — the JS Date constructor parses either.
+function parseFlexibleDate(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const date = new Date(trimmed);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+function parseFlexibleNumber(value: string): number | undefined {
+  const trimmed = value.trim().replace(/,/g, "");
+  if (!trimmed) return undefined;
+  const num = Number(trimmed);
+  return Number.isNaN(num) ? undefined : num;
+}
+
+function parseFlexibleInt(value: string): number | undefined {
+  const num = parseFlexibleNumber(value);
+  return num === undefined ? undefined : Math.trunc(num);
+}
+
+function csvRowToPayload(
+  row: Record<string, string>,
+  rowNumber: number,
+): { payload: ServiceRecordPayload } | { error: string } {
+  const get = (header: (typeof SERVICE_RECORD_CSV_HEADERS)[number]) => (row[header] ?? "").trim();
+
+  const startDate = parseFlexibleDate(get("From Date (MM/DD/YYYY)"));
+  if (!startDate) {
+    return { error: `Row ${rowNumber}: "From Date" is missing or not a valid date` };
+  }
+
+  return {
+    payload: {
+      startDate,
+      endDate: parseFlexibleDate(get("To Date (MM/DD/YYYY)")),
+      positionSnapshot: get("Position/Designation") || undefined,
+      departmentSnapshot: get("Office/Department") || undefined,
+      divisionSnapshot: get("Division") || undefined,
+      empStatusSnapshot: get("Employment Status") || undefined,
+      salarySnapshot: parseFlexibleNumber(get("Monthly Salary")),
+      actlSalarySnapshot: parseFlexibleNumber(get("Annual Salary")),
+      grade: parseFlexibleInt(get("Salary Grade")),
+      step: parseFlexibleInt(get("Step")),
+      itemNo: get("Item No.") || undefined,
+      exitDate: parseFlexibleDate(get("Exit Date (MM/DD/YYYY)")),
+      exitCause: get("Exit Cause") || undefined,
+      leaveAbsence: get("Leave of Absence") || undefined,
+      remarks: get("Remarks") || undefined,
+    },
+  };
+}
+
 function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
+  const queryClient = useQueryClient();
   const [certifiedDate, setCertifiedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [signatoryName, setSignatoryName] = useState("");
   const [signatoryPosition, setSignatoryPosition] = useState("");
@@ -585,6 +693,87 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
         `${employee.lastName}-${employee.firstName}-service-record.docx`,
       ),
   });
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState<Record<string, string>>({});
+
+  const addRecord = useMutation({
+    mutationFn: async () => {
+      const startDate = parseFlexibleDate(addForm.startDate ?? "");
+      if (!startDate) throw new Error("From date is required");
+      const payload: ServiceRecordPayload = {
+        startDate,
+        endDate: addForm.endDate ? parseFlexibleDate(addForm.endDate) : undefined,
+        positionSnapshot: addForm.positionSnapshot || undefined,
+        departmentSnapshot: addForm.departmentSnapshot || undefined,
+        divisionSnapshot: addForm.divisionSnapshot || undefined,
+        empStatusSnapshot: addForm.empStatusSnapshot || undefined,
+        salarySnapshot: addForm.salarySnapshot ? Number(addForm.salarySnapshot) : undefined,
+        actlSalarySnapshot: addForm.actlSalarySnapshot ? Number(addForm.actlSalarySnapshot) : undefined,
+        grade: addForm.grade ? Number(addForm.grade) : undefined,
+        step: addForm.step ? Number(addForm.step) : undefined,
+        itemNo: addForm.itemNo || undefined,
+        exitDate: addForm.exitDate ? parseFlexibleDate(addForm.exitDate) : undefined,
+        exitCause: addForm.exitCause || undefined,
+        leaveAbsence: addForm.leaveAbsence || undefined,
+        remarks: addForm.remarks || undefined,
+      };
+      return apiFetch(`/employees/${employee.id}/service-records`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees", employee.id] });
+      setAddForm({});
+      setAddOpen(false);
+    },
+  });
+
+  const [csvOpen, setCsvOpen] = useState(false);
+  const [csvFileName, setCsvFileName] = useState("");
+  const [csvRecords, setCsvRecords] = useState<ServiceRecordPayload[]>([]);
+  const [csvErrors, setCsvErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleCsvFile(file: File) {
+    setCsvFileName(file.name);
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const records: ServiceRecordPayload[] = [];
+        const errors: string[] = [];
+        results.data.forEach((row, i) => {
+          const result = csvRowToPayload(row, i + 2); // +2: row 1 is the header
+          if ("error" in result) errors.push(result.error);
+          else records.push(result.payload);
+        });
+        setCsvRecords(records);
+        setCsvErrors(errors);
+      },
+    });
+  }
+
+  const importCsv = useMutation({
+    mutationFn: () =>
+      apiFetch(`/employees/${employee.id}/service-records/import`, {
+        method: "POST",
+        body: JSON.stringify({ records: csvRecords }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees", employee.id] });
+      resetCsvDialog();
+      setCsvOpen(false);
+    },
+  });
+
+  function resetCsvDialog() {
+    setCsvFileName("");
+    setCsvRecords([]);
+    setCsvErrors([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -634,8 +823,18 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
       </Card>
 
     <Card className="overflow-hidden">
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between">
         <CardTitle>Service record</CardTitle>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setCsvOpen(true)}>
+            <Upload className="h-3.5 w-3.5" />
+            Upload CSV
+          </Button>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            Add Service Record
+          </Button>
+        </div>
       </CardHeader>
       <Table bare>
         <TableHeader>
@@ -675,6 +874,223 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
         </TableBody>
       </Table>
     </Card>
+
+      <Dialog open={addOpen} onClose={() => setAddOpen(false)} title="Add service record" className="max-w-2xl">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            addRecord.mutate();
+          }}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        >
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-startDate">From date</Label>
+            <Input
+              id="sr-startDate"
+              type="date"
+              required
+              value={addForm.startDate ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, startDate: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-endDate">To date</Label>
+            <Input
+              id="sr-endDate"
+              type="date"
+              value={addForm.endDate ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, endDate: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-position">Position / Designation</Label>
+            <Input
+              id="sr-position"
+              value={addForm.positionSnapshot ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, positionSnapshot: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-department">Office / Department</Label>
+            <Input
+              id="sr-department"
+              value={addForm.departmentSnapshot ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, departmentSnapshot: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-division">Division</Label>
+            <Input
+              id="sr-division"
+              value={addForm.divisionSnapshot ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, divisionSnapshot: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-empStatus">Employment status</Label>
+            <Select
+              id="sr-empStatus"
+              value={addForm.empStatusSnapshot ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, empStatusSnapshot: e.target.value }))}
+            >
+              <option value="">—</option>
+              {employmentStatuses.data?.map((s) => (
+                <option key={s.id} value={s.code}>
+                  {s.description}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-monthlySalary">Monthly salary</Label>
+            <Input
+              id="sr-monthlySalary"
+              type="number"
+              step="0.01"
+              value={addForm.salarySnapshot ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, salarySnapshot: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-annualSalary">Annual salary</Label>
+            <Input
+              id="sr-annualSalary"
+              type="number"
+              step="0.01"
+              value={addForm.actlSalarySnapshot ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, actlSalarySnapshot: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-grade">Salary grade</Label>
+            <Input
+              id="sr-grade"
+              value={addForm.grade ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, grade: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-step">Step</Label>
+            <Input
+              id="sr-step"
+              value={addForm.step ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, step: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-itemNo">Item No.</Label>
+            <Input
+              id="sr-itemNo"
+              value={addForm.itemNo ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, itemNo: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-exitDate">Exit date</Label>
+            <Input
+              id="sr-exitDate"
+              type="date"
+              value={addForm.exitDate ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, exitDate: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-exitCause">Exit cause</Label>
+            <Input
+              id="sr-exitCause"
+              value={addForm.exitCause ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, exitCause: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-leaveAbsence">Leave of absence</Label>
+            <Input
+              id="sr-leaveAbsence"
+              value={addForm.leaveAbsence ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, leaveAbsence: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5 sm:col-span-2">
+            <Label htmlFor="sr-remarks">Remarks</Label>
+            <Input
+              id="sr-remarks"
+              value={addForm.remarks ?? ""}
+              onChange={(e) => setAddForm((prev) => ({ ...prev, remarks: e.target.value }))}
+            />
+          </div>
+
+          {addRecord.isError && (
+            <p className="sm:col-span-2 text-sm text-[var(--color-danger)]">{(addRecord.error as Error).message}</p>
+          )}
+
+          <Button type="submit" disabled={addRecord.isPending} className="sm:col-span-2 w-fit">
+            {addRecord.isPending ? "Saving…" : "Save"}
+          </Button>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={csvOpen}
+        onClose={() => {
+          resetCsvDialog();
+          setCsvOpen(false);
+        }}
+        title="Upload service record CSV"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-[var(--color-muted)]">
+            Download the blank template, fill in the missing service history rows in a spreadsheet program, then
+            upload the completed file here. Dates must be in MM/DD/YYYY format. Employment Status should match a
+            code from Master Data → Employment Status File, but any value will still be saved.
+          </p>
+
+          <Button type="button" variant="outline" size="sm" className="w-fit" onClick={downloadServiceRecordCsvTemplate}>
+            Download CSV template
+          </Button>
+
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="sr-csv-file">CSV file</Label>
+            <input
+              id="sr-csv-file"
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleCsvFile(file);
+              }}
+              className="text-sm"
+            />
+          </div>
+
+          {csvFileName && (
+            <div className="rounded-md border border-[var(--color-border)] bg-slate-50 p-3 text-sm">
+              <p className="font-medium text-foreground">{csvFileName}</p>
+              <p className="text-[var(--color-muted)]">{csvRecords.length} record(s) ready to import</p>
+              {csvErrors.length > 0 && (
+                <ul className="mt-2 list-inside list-disc text-[var(--color-danger)]">
+                  {csvErrors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {importCsv.isError && (
+            <p className="text-sm text-[var(--color-danger)]">{(importCsv.error as Error).message}</p>
+          )}
+
+          <Button
+            type="button"
+            onClick={() => importCsv.mutate()}
+            disabled={csvRecords.length === 0 || importCsv.isPending}
+            className="w-fit"
+          >
+            {importCsv.isPending ? "Importing…" : `Import ${csvRecords.length} record(s)`}
+          </Button>
+        </div>
+      </Dialog>
     </div>
   );
 }
