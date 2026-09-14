@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Upload } from "lucide-react";
+import ExcelJS from "exceljs";
 import Link from "next/link";
-import Papa from "papaparse";
 import { use, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -562,38 +562,30 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
   );
 }
 
-// Exact CSV header text HR fills in — also used as the Papa Parse row keys
-// (header: true), so the template download and the upload parser share one
-// source of truth for column names.
-const SERVICE_RECORD_CSV_HEADERS = [
-  "From Date (MM/DD/YYYY)",
-  "To Date (MM/DD/YYYY)",
-  "Position/Designation",
-  "Office/Department",
-  "Division",
-  "Employment Status",
-  "Monthly Salary",
-  "Annual Salary",
-  "Salary Grade",
-  "Step",
-  "Item No.",
-  "Exit Date (MM/DD/YYYY)",
-  "Exit Cause",
-  "Leave of Absence",
-  "Remarks",
+// Column order for both the generated .xlsx template and the uploaded-file
+// parser — one source of truth so a header index change can't desync them.
+// `dropdown` names which master list (if any) populates that column's
+// data-validation picklist, to cut down on typos HR would otherwise type.
+const SERVICE_RECORD_COLUMNS = [
+  { header: "From Date (MM/DD/YYYY)", key: "startDate" },
+  { header: "To Date (MM/DD/YYYY)", key: "endDate" },
+  { header: "Position/Designation", key: "positionSnapshot", dropdown: "position" },
+  { header: "Office/Department", key: "departmentSnapshot", dropdown: "department" },
+  { header: "Division", key: "divisionSnapshot" },
+  { header: "Employment Status", key: "empStatusSnapshot", dropdown: "empStatus" },
+  { header: "Monthly Salary", key: "salarySnapshot" },
+  { header: "Annual Salary", key: "actlSalarySnapshot" },
+  { header: "Salary Grade", key: "grade" },
+  { header: "Step", key: "step" },
+  { header: "Item No.", key: "itemNo" },
+  { header: "Exit Date (MM/DD/YYYY)", key: "exitDate" },
+  { header: "Exit Cause", key: "exitCause" },
+  { header: "Leave of Absence", key: "leaveAbsence" },
+  { header: "Remarks", key: "remarks" },
 ] as const;
 
-function downloadServiceRecordCsvTemplate() {
-  const csv = SERVICE_RECORD_CSV_HEADERS.map((h) => `"${h}"`).join(",") + "\r\n";
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "service-record-template.csv";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+function serviceRecordColIndex(key: string): number {
+  return SERVICE_RECORD_COLUMNS.findIndex((c) => c.key === key) + 1;
 }
 
 type ServiceRecordPayload = {
@@ -614,34 +606,113 @@ type ServiceRecordPayload = {
   remarks?: string;
 };
 
-// Accepts both the CSV's instructed MM/DD/YYYY and a plain <input type="date">
-// value (YYYY-MM-DD) — the JS Date constructor parses either.
-function parseFlexibleDate(value: string): string | undefined {
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadServiceRecordTemplate(masters: {
+  positions: Position[];
+  departments: Department[];
+  employmentStatuses: EmploymentStatusCode[];
+}) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Service Record");
+  const lists = workbook.addWorksheet("Lists");
+  lists.state = "veryHidden";
+
+  sheet.columns = SERVICE_RECORD_COLUMNS.map((c) => ({ header: c.header, width: 22 }));
+  sheet.getRow(1).font = { bold: true };
+
+  const positionNames = Array.from(new Set(masters.positions.map((p) => p.positionDesc))).sort();
+  const departmentNames = Array.from(new Set(masters.departments.map((d) => d.deptDesc))).sort();
+  const empStatusOptions = masters.employmentStatuses.map((s) => `${s.code} - ${s.description}`).sort();
+
+  positionNames.forEach((name, i) => lists.getCell(i + 1, 1).value = name);
+  departmentNames.forEach((name, i) => lists.getCell(i + 1, 2).value = name);
+  empStatusOptions.forEach((name, i) => lists.getCell(i + 1, 3).value = name);
+
+  const DATA_ROWS = 500;
+  function applyDropdown(key: string, listRange: string) {
+    const col = serviceRecordColIndex(key);
+    for (let r = 2; r <= DATA_ROWS + 1; r++) {
+      sheet.getCell(r, col).dataValidation = { type: "list", allowBlank: true, formulae: [listRange] };
+    }
+  }
+  if (positionNames.length > 0) applyDropdown("positionSnapshot", `Lists!$A$1:$A$${positionNames.length}`);
+  if (departmentNames.length > 0) applyDropdown("departmentSnapshot", `Lists!$B$1:$B$${departmentNames.length}`);
+  if (empStatusOptions.length > 0) applyDropdown("empStatusSnapshot", `Lists!$C$1:$C$${empStatusOptions.length}`);
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadBlob(
+    new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
+    "service-record-template.xlsx",
+  );
+}
+
+// Accepts a real Excel date cell, a typed MM/DD/YYYY string, or an
+// <input type="date"> value (YYYY-MM-DD) — the JS Date constructor parses
+// the string forms, and exceljs already hands back a Date for date cells.
+function parseFlexibleDate(value: unknown): string | undefined {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   const date = new Date(trimmed);
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
-function parseFlexibleNumber(value: string): number | undefined {
+function parseFlexibleNumber(value: unknown): number | undefined {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return undefined;
   const trimmed = value.trim().replace(/,/g, "");
   if (!trimmed) return undefined;
   const num = Number(trimmed);
   return Number.isNaN(num) ? undefined : num;
 }
 
-function parseFlexibleInt(value: string): number | undefined {
+function parseFlexibleInt(value: unknown): number | undefined {
   const num = parseFlexibleNumber(value);
   return num === undefined ? undefined : Math.trunc(num);
 }
 
-function csvRowToPayload(
-  row: Record<string, string>,
-  rowNumber: number,
-): { payload: ServiceRecordPayload } | { error: string } {
-  const get = (header: (typeof SERVICE_RECORD_CSV_HEADERS)[number]) => (row[header] ?? "").trim();
+// Cell value can be a string, number, Date, rich-text object, or formula
+// result depending on how the user filled it in — normalize to plain text.
+function cellText(value: ExcelJS.CellValue): string {
+  if (value === null || value === undefined) return "";
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "object") {
+    if ("richText" in value) return value.richText.map((t) => t.text).join("");
+    if ("text" in value) return String(value.text ?? "");
+    if ("result" in value) return String(value.result ?? "");
+  }
+  return String(value).trim();
+}
 
-  const startDate = parseFlexibleDate(get("From Date (MM/DD/YYYY)"));
+// The Employment Status dropdown shows "CODE - Description" for clarity but
+// only the code should be stored (matches what's already in the DB and what
+// the manual Add form saves) — take the text before the first " - ".
+function extractStatusCode(text: string): string {
+  return text.split(" - ")[0]?.trim() ?? text.trim();
+}
+
+function excelRowToPayload(
+  row: ExcelJS.Row,
+  rowNumber: number,
+): { payload: ServiceRecordPayload } | { error: string } | null {
+  const get = (key: string) => row.getCell(serviceRecordColIndex(key)).value;
+  const text = (key: string) => cellText(get(key));
+
+  const isBlank = SERVICE_RECORD_COLUMNS.every((c) => !text(c.key));
+  if (isBlank) return null;
+
+  const startDate = parseFlexibleDate(get("startDate"));
   if (!startDate) {
     return { error: `Row ${rowNumber}: "From Date" is missing or not a valid date` };
   }
@@ -649,22 +720,43 @@ function csvRowToPayload(
   return {
     payload: {
       startDate,
-      endDate: parseFlexibleDate(get("To Date (MM/DD/YYYY)")),
-      positionSnapshot: get("Position/Designation") || undefined,
-      departmentSnapshot: get("Office/Department") || undefined,
-      divisionSnapshot: get("Division") || undefined,
-      empStatusSnapshot: get("Employment Status") || undefined,
-      salarySnapshot: parseFlexibleNumber(get("Monthly Salary")),
-      actlSalarySnapshot: parseFlexibleNumber(get("Annual Salary")),
-      grade: parseFlexibleInt(get("Salary Grade")),
-      step: parseFlexibleInt(get("Step")),
-      itemNo: get("Item No.") || undefined,
-      exitDate: parseFlexibleDate(get("Exit Date (MM/DD/YYYY)")),
-      exitCause: get("Exit Cause") || undefined,
-      leaveAbsence: get("Leave of Absence") || undefined,
-      remarks: get("Remarks") || undefined,
+      endDate: parseFlexibleDate(get("endDate")),
+      positionSnapshot: text("positionSnapshot") || undefined,
+      departmentSnapshot: text("departmentSnapshot") || undefined,
+      divisionSnapshot: text("divisionSnapshot") || undefined,
+      empStatusSnapshot: text("empStatusSnapshot") ? extractStatusCode(text("empStatusSnapshot")) : undefined,
+      salarySnapshot: parseFlexibleNumber(get("salarySnapshot")),
+      actlSalarySnapshot: parseFlexibleNumber(get("actlSalarySnapshot")),
+      grade: parseFlexibleInt(get("grade")),
+      step: parseFlexibleInt(get("step")),
+      itemNo: text("itemNo") || undefined,
+      exitDate: parseFlexibleDate(get("exitDate")),
+      exitCause: text("exitCause") || undefined,
+      leaveAbsence: text("leaveAbsence") || undefined,
+      remarks: text("remarks") || undefined,
     },
   };
+}
+
+async function parseServiceRecordWorkbook(file: File): Promise<{ records: ServiceRecordPayload[]; errors: string[] }> {
+  const buffer = await file.arrayBuffer();
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const sheet = workbook.worksheets[0];
+
+  const records: ServiceRecordPayload[] = [];
+  const errors: string[] = [];
+  if (!sheet) return { records, errors: ["This file has no worksheet"] };
+
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return; // header row
+    const result = excelRowToPayload(row, rowNumber);
+    if (result === null) return;
+    if ("error" in result) errors.push(result.error);
+    else records.push(result.payload);
+  });
+
+  return { records, errors };
 }
 
 function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
@@ -675,6 +767,14 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
   const employmentStatuses = useQuery({
     queryKey: ["/employment-statuses"],
     queryFn: () => apiFetchAll<EmploymentStatusCode>("/employment-statuses"),
+  });
+  const departments = useQuery({
+    queryKey: ["/departments"],
+    queryFn: () => apiFetchAll<Department>("/departments"),
+  });
+  const positions = useQuery({
+    queryKey: ["/positions"],
+    queryFn: () => apiFetchAll<Position>("/positions"),
   });
 
   const exportRecord = useMutation({
@@ -734,25 +834,22 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
   const [csvFileName, setCsvFileName] = useState("");
   const [csvRecords, setCsvRecords] = useState<ServiceRecordPayload[]>([]);
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
+  const [csvParsing, setCsvParsing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function handleCsvFile(file: File) {
+  async function handleTemplateFile(file: File) {
     setCsvFileName(file.name);
-    Papa.parse<Record<string, string>>(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const records: ServiceRecordPayload[] = [];
-        const errors: string[] = [];
-        results.data.forEach((row, i) => {
-          const result = csvRowToPayload(row, i + 2); // +2: row 1 is the header
-          if ("error" in result) errors.push(result.error);
-          else records.push(result.payload);
-        });
-        setCsvRecords(records);
-        setCsvErrors(errors);
-      },
-    });
+    setCsvParsing(true);
+    try {
+      const { records, errors } = await parseServiceRecordWorkbook(file);
+      setCsvRecords(records);
+      setCsvErrors(errors);
+    } catch {
+      setCsvRecords([]);
+      setCsvErrors(["Could not read this file — make sure it's the .xlsx template, not renamed or re-saved as .csv"]);
+    } finally {
+      setCsvParsing(false);
+    }
   }
 
   const importCsv = useMutation({
@@ -772,6 +869,7 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
     setCsvFileName("");
     setCsvRecords([]);
     setCsvErrors([]);
+    setCsvParsing(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -1035,29 +1133,42 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
           resetCsvDialog();
           setCsvOpen(false);
         }}
-        title="Upload service record CSV"
+        title="Upload service record spreadsheet"
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-[var(--color-muted)]">
-            Download the blank template, fill in the missing service history rows in a spreadsheet program, then
-            upload the completed file here. Dates must be in MM/DD/YYYY format. Employment Status should match a
-            code from Master Data → Employment Status File, but any value will still be saved.
+            Download the blank template, fill in the missing service history rows in Excel, then upload the
+            completed file here. Position/Designation, Office/Department, and Employment Status are dropdown lists
+            in the template to prevent typos — pick from the list rather than typing. Dates must be in MM/DD/YYYY
+            format.
           </p>
 
-          <Button type="button" variant="outline" size="sm" className="w-fit" onClick={downloadServiceRecordCsvTemplate}>
-            Download CSV template
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-fit"
+            onClick={() =>
+              downloadServiceRecordTemplate({
+                positions: positions.data ?? [],
+                departments: departments.data ?? [],
+                employmentStatuses: employmentStatuses.data ?? [],
+              })
+            }
+          >
+            Download template (.xlsx)
           </Button>
 
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="sr-csv-file">CSV file</Label>
+            <Label htmlFor="sr-csv-file">Filled-in spreadsheet</Label>
             <input
               id="sr-csv-file"
               ref={fileInputRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".xlsx"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) handleCsvFile(file);
+                if (file) handleTemplateFile(file);
               }}
               className="text-sm"
             />
@@ -1066,7 +1177,9 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
           {csvFileName && (
             <div className="rounded-md border border-[var(--color-border)] bg-slate-50 p-3 text-sm">
               <p className="font-medium text-foreground">{csvFileName}</p>
-              <p className="text-[var(--color-muted)]">{csvRecords.length} record(s) ready to import</p>
+              <p className="text-[var(--color-muted)]">
+                {csvParsing ? "Reading file…" : `${csvRecords.length} record(s) ready to import`}
+              </p>
               {csvErrors.length > 0 && (
                 <ul className="mt-2 list-inside list-disc text-[var(--color-danger)]">
                   {csvErrors.map((err, i) => (
@@ -1084,7 +1197,7 @@ function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
           <Button
             type="button"
             onClick={() => importCsv.mutate()}
-            disabled={csvRecords.length === 0 || importCsv.isPending}
+            disabled={csvRecords.length === 0 || csvParsing || importCsv.isPending}
             className="w-fit"
           >
             {importCsv.isPending ? "Importing…" : `Import ${csvRecords.length} record(s)`}
