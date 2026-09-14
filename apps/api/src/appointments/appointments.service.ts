@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { AuthenticatedUser } from '../auth/auth.service.js';
 import type { RecordAppointmentChangeDto } from './dto/record-appointment-change.dto.js';
 import type { CreateServiceRecordDto } from './dto/create-service-record.dto.js';
+import { toServiceRecordCreateData } from '../service-records/service-record-mapper.js';
 
 // Legacy sMode: 1=active, 2=inactive, CONFIRMED derived from which
 // AppointmentStatus is set (PERSONNEL_ANALYSIS.md §5). These four statuses
@@ -47,34 +48,12 @@ export class AppointmentsService {
     });
   }
 
-  private toServiceRecordData(employeeId: string, dto: CreateServiceRecordDto) {
-    return {
-      employeeId,
-      startDate: dto.startDate,
-      endDate: dto.endDate,
-      positionSnapshot: dto.positionSnapshot,
-      departmentSnapshot: dto.departmentSnapshot,
-      divisionSnapshot: dto.divisionSnapshot,
-      empStatusSnapshot: dto.empStatusSnapshot,
-      salarySnapshot: dto.salarySnapshot,
-      salaryUnitSnapshot: dto.salarySnapshot != null ? 'Monthly' : undefined,
-      actlSalarySnapshot: dto.actlSalarySnapshot,
-      grade: dto.grade,
-      step: dto.step,
-      itemNo: dto.itemNo,
-      exitDate: dto.exitDate,
-      exitCause: dto.exitCause,
-      leaveAbsence: dto.leaveAbsence,
-      remarks: dto.remarks,
-    };
-  }
-
   async createServiceRecord(employeeId: string, dto: CreateServiceRecordDto) {
     const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
     if (!employee) {
       throw new NotFoundException(`Employee ${employeeId} not found`);
     }
-    return this.prisma.serviceRecord.create({ data: this.toServiceRecordData(employeeId, dto) });
+    return this.prisma.serviceRecord.create({ data: toServiceRecordCreateData(employeeId, dto) });
   }
 
   async importServiceRecords(employeeId: string, records: CreateServiceRecordDto[]) {
@@ -83,7 +62,7 @@ export class AppointmentsService {
       throw new NotFoundException(`Employee ${employeeId} not found`);
     }
     const result = await this.prisma.serviceRecord.createMany({
-      data: records.map((dto) => this.toServiceRecordData(employeeId, dto)),
+      data: records.map((dto) => toServiceRecordCreateData(employeeId, dto)),
     });
     return { imported: result.count };
   }

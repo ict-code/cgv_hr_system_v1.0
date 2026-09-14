@@ -24,6 +24,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Upload,
   UserCog,
   UserPlus,
   UserRound,
@@ -66,6 +67,7 @@ export const NAV_SECTIONS: NavSection[] = [
       // Experience / Training are tabs on the employee detail page now
       // (reached from here), not separate nav entries.
       { label: "Personal Data Sheet Records", href: "/employees", icon: UserRound },
+      { label: "Import Service Records", href: "/service-records/import", icon: Upload },
       { label: "Update Employment Status Process", href: soon("Update Employment Status Process", "Personnel File"), icon: UserCog },
     ],
   },

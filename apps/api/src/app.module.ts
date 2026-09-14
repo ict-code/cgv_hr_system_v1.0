@@ -17,6 +17,7 @@ import { PersonnelRecordsModule } from './personnel-records/personnel-records.mo
 import { AppointmentStatusesModule } from './appointment-statuses/appointment-statuses.module.js';
 import { EmploymentStatusesModule } from './employment-statuses/employment-statuses.module.js';
 import { ServiceRecordExportModule } from './service-record-export/service-record-export.module.js';
+import { ServiceRecordsModule } from './service-records/service-records.module.js';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ServiceRecordExportModule } from './service-record-export/service-recor
     AppointmentStatusesModule,
     EmploymentStatusesModule,
     ServiceRecordExportModule,
+    ServiceRecordsModule,
   ],
   controllers: [HealthController],
 })

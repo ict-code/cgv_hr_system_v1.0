@@ -3,12 +3,17 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Plus, Upload } from "lucide-react";
-import ExcelJS from "exceljs";
 import Link from "next/link";
 import { use, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiDownload, apiFetch, apiFetchAll } from "@/lib/api";
+import {
+  downloadServiceRecordTemplate,
+  parseFlexibleDate,
+  parseServiceRecordWorkbook,
+  type ServiceRecordPayload,
+} from "@/lib/service-record-import";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   APPOINTMENT_STATUS_LABELS,
@@ -561,215 +566,6 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
       </Card>
     </div>
   );
-}
-
-// Column order for both the generated .xlsx template and the uploaded-file
-// parser — one source of truth so a header index change can't desync them.
-// `dropdown` names which master list (if any) populates that column's
-// data-validation picklist, to cut down on typos HR would otherwise type.
-const SERVICE_RECORD_COLUMNS = [
-  { header: "From Date (MM/DD/YYYY)", key: "startDate" },
-  { header: "To Date (MM/DD/YYYY)", key: "endDate" },
-  { header: "Position/Designation", key: "positionSnapshot", dropdown: "position" },
-  { header: "Office/Department", key: "departmentSnapshot", dropdown: "department" },
-  { header: "Division", key: "divisionSnapshot" },
-  { header: "Employment Status", key: "empStatusSnapshot", dropdown: "empStatus" },
-  { header: "Monthly Salary", key: "salarySnapshot" },
-  { header: "Annual Salary", key: "actlSalarySnapshot" },
-  { header: "Salary Grade", key: "grade", dropdown: "grade" },
-  { header: "Step", key: "step", dropdown: "step" },
-  { header: "Item No.", key: "itemNo" },
-  { header: "Exit Date (MM/DD/YYYY)", key: "exitDate" },
-  { header: "Exit Cause", key: "exitCause" },
-  { header: "Leave of Absence", key: "leaveAbsence" },
-  { header: "Remarks", key: "remarks" },
-] as const;
-
-function serviceRecordColIndex(key: string): number {
-  return SERVICE_RECORD_COLUMNS.findIndex((c) => c.key === key) + 1;
-}
-
-type ServiceRecordPayload = {
-  startDate: string;
-  endDate?: string;
-  positionSnapshot?: string;
-  departmentSnapshot?: string;
-  divisionSnapshot?: string;
-  empStatusSnapshot?: string;
-  salarySnapshot?: number;
-  actlSalarySnapshot?: number;
-  grade?: number;
-  step?: number;
-  itemNo?: string;
-  exitDate?: string;
-  exitCause?: string;
-  leaveAbsence?: string;
-  remarks?: string;
-};
-
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-async function downloadServiceRecordTemplate(masters: {
-  positions: Position[];
-  departments: Department[];
-  employmentStatuses: EmploymentStatusCode[];
-  gradeMax: number;
-  stepMax: number;
-}) {
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Service Record");
-  const lists = workbook.addWorksheet("Lists");
-  lists.state = "veryHidden";
-
-  sheet.columns = SERVICE_RECORD_COLUMNS.map((c) => ({ header: c.header, width: 22 }));
-  sheet.getRow(1).font = { bold: true };
-
-  const positionNames = Array.from(new Set(masters.positions.map((p) => p.positionDesc))).sort();
-  const departmentNames = Array.from(new Set(masters.departments.map((d) => d.deptDesc))).sort();
-  const empStatusOptions = masters.employmentStatuses.map((s) => `${s.code} - ${s.description}`).sort();
-
-  // Grade/step have no dedicated master-list endpoint — they're plain ints
-  // on ServiceRecord, not FKs — so the dropdown is just the real min..max
-  // range seen across the Salary Grade Table data (currently 1-50 / 1-10).
-  const grades = Array.from({ length: masters.gradeMax }, (_, i) => i + 1);
-  const steps = Array.from({ length: masters.stepMax }, (_, i) => i + 1);
-
-  positionNames.forEach((name, i) => lists.getCell(i + 1, 1).value = name);
-  departmentNames.forEach((name, i) => lists.getCell(i + 1, 2).value = name);
-  empStatusOptions.forEach((name, i) => lists.getCell(i + 1, 3).value = name);
-  grades.forEach((n, i) => lists.getCell(i + 1, 4).value = n);
-  steps.forEach((n, i) => lists.getCell(i + 1, 5).value = n);
-
-  const DATA_ROWS = 500;
-  function applyDropdown(key: string, listRange: string) {
-    const col = serviceRecordColIndex(key);
-    for (let r = 2; r <= DATA_ROWS + 1; r++) {
-      sheet.getCell(r, col).dataValidation = { type: "list", allowBlank: true, formulae: [listRange] };
-    }
-  }
-  if (positionNames.length > 0) applyDropdown("positionSnapshot", `Lists!$A$1:$A$${positionNames.length}`);
-  if (departmentNames.length > 0) applyDropdown("departmentSnapshot", `Lists!$B$1:$B$${departmentNames.length}`);
-  if (empStatusOptions.length > 0) applyDropdown("empStatusSnapshot", `Lists!$C$1:$C$${empStatusOptions.length}`);
-  applyDropdown("grade", `Lists!$D$1:$D$${grades.length}`);
-  applyDropdown("step", `Lists!$E$1:$E$${steps.length}`);
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  downloadBlob(
-    new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-    "service-record-template.xlsx",
-  );
-}
-
-// Accepts a real Excel date cell, a typed MM/DD/YYYY string, or an
-// <input type="date"> value (YYYY-MM-DD) — the JS Date constructor parses
-// the string forms, and exceljs already hands back a Date for date cells.
-function parseFlexibleDate(value: unknown): string | undefined {
-  if (value instanceof Date) return value.toISOString();
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  const date = new Date(trimmed);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
-}
-
-function parseFlexibleNumber(value: unknown): number | undefined {
-  if (typeof value === "number") return value;
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim().replace(/,/g, "");
-  if (!trimmed) return undefined;
-  const num = Number(trimmed);
-  return Number.isNaN(num) ? undefined : num;
-}
-
-function parseFlexibleInt(value: unknown): number | undefined {
-  const num = parseFlexibleNumber(value);
-  return num === undefined ? undefined : Math.trunc(num);
-}
-
-// Cell value can be a string, number, Date, rich-text object, or formula
-// result depending on how the user filled it in — normalize to plain text.
-function cellText(value: ExcelJS.CellValue): string {
-  if (value === null || value === undefined) return "";
-  if (value instanceof Date) return value.toISOString();
-  if (typeof value === "object") {
-    if ("richText" in value) return value.richText.map((t) => t.text).join("");
-    if ("text" in value) return String(value.text ?? "");
-    if ("result" in value) return String(value.result ?? "");
-  }
-  return String(value).trim();
-}
-
-// The Employment Status dropdown shows "CODE - Description" for clarity but
-// only the code should be stored (matches what's already in the DB and what
-// the manual Add form saves) — take the text before the first " - ".
-function extractStatusCode(text: string): string {
-  return text.split(" - ")[0]?.trim() ?? text.trim();
-}
-
-function excelRowToPayload(
-  row: ExcelJS.Row,
-  rowNumber: number,
-): { payload: ServiceRecordPayload } | { error: string } | null {
-  const get = (key: string) => row.getCell(serviceRecordColIndex(key)).value;
-  const text = (key: string) => cellText(get(key));
-
-  const isBlank = SERVICE_RECORD_COLUMNS.every((c) => !text(c.key));
-  if (isBlank) return null;
-
-  const startDate = parseFlexibleDate(get("startDate"));
-  if (!startDate) {
-    return { error: `Row ${rowNumber}: "From Date" is missing or not a valid date` };
-  }
-
-  return {
-    payload: {
-      startDate,
-      endDate: parseFlexibleDate(get("endDate")),
-      positionSnapshot: text("positionSnapshot") || undefined,
-      departmentSnapshot: text("departmentSnapshot") || undefined,
-      divisionSnapshot: text("divisionSnapshot") || undefined,
-      empStatusSnapshot: text("empStatusSnapshot") ? extractStatusCode(text("empStatusSnapshot")) : undefined,
-      salarySnapshot: parseFlexibleNumber(get("salarySnapshot")),
-      actlSalarySnapshot: parseFlexibleNumber(get("actlSalarySnapshot")),
-      grade: parseFlexibleInt(get("grade")),
-      step: parseFlexibleInt(get("step")),
-      itemNo: text("itemNo") || undefined,
-      exitDate: parseFlexibleDate(get("exitDate")),
-      exitCause: text("exitCause") || undefined,
-      leaveAbsence: text("leaveAbsence") || undefined,
-      remarks: text("remarks") || undefined,
-    },
-  };
-}
-
-async function parseServiceRecordWorkbook(file: File): Promise<{ records: ServiceRecordPayload[]; errors: string[] }> {
-  const buffer = await file.arrayBuffer();
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-  const sheet = workbook.worksheets[0];
-
-  const records: ServiceRecordPayload[] = [];
-  const errors: string[] = [];
-  if (!sheet) return { records, errors: ["This file has no worksheet"] };
-
-  sheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return; // header row
-    const result = excelRowToPayload(row, rowNumber);
-    if (result === null) return;
-    if ("error" in result) errors.push(result.error);
-    else records.push(result.payload);
-  });
-
-  return { records, errors };
 }
 
 function ServiceRecordTab({ employee }: { employee: EmployeeDetail }) {
