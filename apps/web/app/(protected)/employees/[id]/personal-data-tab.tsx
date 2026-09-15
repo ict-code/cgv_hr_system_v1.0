@@ -21,7 +21,7 @@ import { Select } from "@/components/ui/select";
 
 type FormState = Record<string, string>;
 
-const DATE_FIELDS = new Set(["birthDate", "dateHired", "hiredDate", "appointDate"]);
+const DATE_FIELDS = new Set(["birthDate", "dateHired", "hiredDate", "appointDate", "dateInactivated"]);
 const NUMBER_FIELDS = new Set(["height", "weight"]);
 const BOOLEAN_FIELDS = new Set(["validated", "inactive"]);
 
@@ -208,6 +208,27 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
           </div>
           <Field form={form} setForm={setForm} name="civilStatus" label="Civil status" />
           <Field form={form} setForm={setForm} name="nationality" label="Nationality" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Employment Standing</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="inactive">Inactive</Label>
+            <Select
+              id="inactive"
+              value={form.inactive ?? "false"}
+              onChange={(e) => setForm((p) => ({ ...p, inactive: e.target.value }))}
+            >
+              <option value="false">No — Active</option>
+              <option value="true">Yes — Inactive</option>
+            </Select>
+          </div>
+          <Field form={form} setForm={setForm} name="dateInactivated" label="Date inactivated" type="date" />
+          <Field form={form} setForm={setForm} name="inactiveCause" label="Cause (e.g. Death, Retired, Resigned)" />
         </CardContent>
       </Card>
 

@@ -6,9 +6,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { apiFetch, apiFetchAll } from "@/lib/api";
 import { exportRowsToExcel } from "@/lib/export-excel";
-import type { Employee, PaginatedResult } from "@/lib/types";
+import type { Department, Employee, PaginatedResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
 
@@ -17,8 +19,15 @@ const PAGE_SIZE = 20;
 export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [activeFilter, setActiveFilter] = useState<"active" | "inactive">("active");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+
+  const departments = useQuery({
+    queryKey: ["/departments"],
+    queryFn: () => apiFetchAll<Department>("/departments"),
+  });
 
   async function handleExport() {
     setExporting(true);
@@ -56,13 +65,18 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, departmentId, activeFilter]);
 
-  const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(PAGE_SIZE),
+    inactive: String(activeFilter === "inactive"),
+  });
   if (debouncedSearch) query.set("search", debouncedSearch);
+  if (departmentId) query.set("departmentId", departmentId);
 
   const employees = useQuery({
-    queryKey: ["employees", page, debouncedSearch],
+    queryKey: ["employees", page, debouncedSearch, departmentId, activeFilter],
     queryFn: () => apiFetch<PaginatedResult<Employee>>(`/employees?${query.toString()}`),
   });
 
@@ -71,7 +85,44 @@ export default function EmployeesPage() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
-    <TableCard
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-4 rounded-lg border border-[var(--color-border)] bg-white p-3">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="deptFilter" className="shrink-0">
+            Office:
+          </Label>
+          <Select id="deptFilter" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} className="w-auto min-w-56">
+            <option value="">All Offices</option>
+            {departments.data?.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.deptDesc}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="flex items-center gap-4 text-sm">
+          <label className="flex items-center gap-1.5">
+            <input
+              type="radio"
+              name="employeesActiveFilter"
+              checked={activeFilter === "active"}
+              onChange={() => setActiveFilter("active")}
+            />
+            Active
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input
+              type="radio"
+              name="employeesActiveFilter"
+              checked={activeFilter === "inactive"}
+              onChange={() => setActiveFilter("inactive")}
+            />
+            In-Active
+          </label>
+        </div>
+      </div>
+
+      <TableCard
       title="Employees"
       search={search}
       onSearchChange={setSearch}
@@ -143,6 +194,7 @@ export default function EmployeesPage() {
         </TableBody>
       </Table>
       <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
-    </TableCard>
+      </TableCard>
+    </div>
   );
 }

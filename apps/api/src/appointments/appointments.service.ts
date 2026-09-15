@@ -10,6 +10,17 @@ import { toServiceRecordCreateData } from '../service-records/service-record-map
 // represent an employee leaving this department/the service.
 const INACTIVE_STATUSES = new Set(['DT', 'RS', 'RT', 'TO']);
 
+// Narrower set that also flips Employee.inactive itself (not just this
+// Appointment's sMode) — Death/Retired/Resigned unambiguously mean the
+// employee has left the service for good. Transfer Out (TO) is deliberately
+// excluded: real data shows it used inconsistently (some transfers are
+// within the LGU), so it stays a manual call rather than an automatic one.
+const EMPLOYEE_INACTIVATING_STATUSES: Record<string, string> = {
+  DT: 'Death',
+  RT: 'Retired',
+  RS: 'Resigned',
+};
+
 @Injectable()
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -179,6 +190,14 @@ export class AppointmentsService {
           itemNo: nextAppointmentData.itemNo,
         },
       });
+
+      const inactivatingCause = EMPLOYEE_INACTIVATING_STATUSES[dto.status];
+      if (inactivatingCause) {
+        await tx.employee.update({
+          where: { id: employeeId },
+          data: { inactive: true, dateInactivated: dto.effectDate, inactiveCause: inactivatingCause },
+        });
+      }
 
       return { appointment, changeLog, serviceRecord };
     });
