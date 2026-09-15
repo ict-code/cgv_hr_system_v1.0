@@ -262,9 +262,13 @@ function AppointmentDetail({ employeeId }: { employeeId: string }) {
     },
   });
 
-  if (employee.isLoading) return <Card className="p-6 text-sm text-[var(--color-muted)]">Loading…</Card>;
+  if (employee.isLoading) {
+    return <Card className="plantilla-appt-detail p-6 text-sm text-[var(--color-muted)]">Loading…</Card>;
+  }
   if (employee.isError || !employee.data) {
-    return <Card className="p-6 text-sm text-[var(--color-danger)]">Could not load this employee.</Card>;
+    return (
+      <Card className="plantilla-appt-detail p-6 text-sm text-[var(--color-danger)]">Could not load this employee.</Card>
+    );
   }
 
   const emp = employee.data;
@@ -272,7 +276,7 @@ function AppointmentDetail({ employeeId }: { employeeId: string }) {
   const employmentStatusDesc = employmentStatuses.data?.find((s) => s.code === current?.employmentStatus)?.description;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="plantilla-appt-detail flex flex-col gap-4">
       <Card>
         <CardHeader>
           <CardTitle>

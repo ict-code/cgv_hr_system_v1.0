@@ -47,3 +47,47 @@ body {
     margin: 0.5in;
   }
 }
+
+/* Scoped dark theme for the Plantilla & Appointments File — Regular/Elected
+   detail panel only (not app-wide — the rest of the app has no dark theme
+   yet). Without this, a browser's own "force dark" heuristic re-colors the
+   unstyled light-mode markup unpredictably (mismatched label colors etc.). */
+@media (prefers-color-scheme: dark) {
+  .plantilla-appt-detail {
+    --foreground: #e6edf5;
+    --color-border: #334155;
+    --color-muted: #94a3b8;
+    --color-danger: #f87171;
+    --color-danger-bg: #3f1d1d;
+    --color-success: #4ade80;
+    --color-success-bg: #14301d;
+    --color-warning: #fb923c;
+    --color-warning-bg: #3a2410;
+    --color-info: #60a5fa;
+    --color-info-bg: #16283f;
+    color: var(--foreground);
+  }
+
+  .plantilla-appt-detail :where(.bg-white) {
+    background-color: #1e293b;
+  }
+
+  .plantilla-appt-detail :where(.bg-slate-100) {
+    background-color: #334155;
+  }
+
+  .plantilla-appt-detail :where(.text-slate-600) {
+    color: #cbd5e1;
+  }
+
+  .plantilla-appt-detail input,
+  .plantilla-appt-detail select {
+    background-color: #1e293b;
+    color: var(--foreground);
+    color-scheme: dark;
+  }
+
+  .plantilla-appt-detail input::placeholder {
+    color: #64748b;
+  }
+}
