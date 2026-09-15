@@ -270,17 +270,21 @@ function WorkExperienceTab({ employee }: { employee: EmployeeDetail }) {
 function TrainingTab({ employee }: { employee: EmployeeDetail }) {
   const columns: RecordColumn<EmployeeTraining>[] = [
     { key: "trainingName", label: "Training/Study/Seminar" },
-    { key: "periodCovered", label: "Period Covered" },
+    {
+      key: "periodCovered",
+      label: "Period Covered",
+      render: (row) =>
+        row.startDate || row.endDate ? `${formatDate(row.startDate)} - ${formatDate(row.endDate)}` : "—",
+    },
     { key: "conductor", label: "Conductor" },
     { key: "numberOfHours", label: "No. of Hours" },
     { key: "type", label: "Type of L&D", render: (row) => (row.type ? LEARNING_DEVELOPMENT_TYPE_LABELS[row.type] : "—") },
   ];
   const fields: RecordField[] = [
     { key: "trainingName", label: "Training/Study/Seminar", type: "text", required: true },
-    { key: "startDate", label: "Start date", type: "date" },
-    { key: "endDate", label: "End date", type: "date" },
+    { key: "startDate", label: "Start date (Period Covered from)", type: "date" },
+    { key: "endDate", label: "End date (Period Covered to)", type: "date" },
     { key: "conductor", label: "Conductor", type: "text" },
-    { key: "periodCovered", label: "Period Covered", type: "text" },
     { key: "numberOfHours", label: "No. of Hours", type: "number" },
     {
       key: "type",

@@ -66,6 +66,7 @@ enum AppointType {
 
 /// EmployeeTraining.type — CS Form 212 Section VI "Type of L&D" classification.
 enum LearningDevelopmentType {
+  FOUNDATION
   MANAGERIAL
   SUPERVISORY
   TECHNICAL

@@ -219,8 +219,9 @@ export type EmployeeWorkExperience = {
   employmentStatus: string | null;
 };
 
-export const LEARNING_DEVELOPMENT_TYPES = ["MANAGERIAL", "SUPERVISORY", "TECHNICAL", "CLERICAL", "OTHERS"] as const;
+export const LEARNING_DEVELOPMENT_TYPES = ["FOUNDATION", "MANAGERIAL", "SUPERVISORY", "TECHNICAL", "CLERICAL", "OTHERS"] as const;
 export const LEARNING_DEVELOPMENT_TYPE_LABELS: Record<string, string> = {
+  FOUNDATION: "Foundation",
   MANAGERIAL: "Managerial",
   SUPERVISORY: "Supervisory",
   TECHNICAL: "Technical",
