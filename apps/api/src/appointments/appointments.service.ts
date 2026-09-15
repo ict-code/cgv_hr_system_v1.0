@@ -11,14 +11,13 @@ import { toServiceRecordCreateData } from '../service-records/service-record-map
 const INACTIVE_STATUSES = new Set(['DT', 'RS', 'RT', 'TO']);
 
 // Narrower set that also flips Employee.inactive itself (not just this
-// Appointment's sMode) — Death/Retired/Resigned unambiguously mean the
-// employee has left the service for good. Transfer Out (TO) is deliberately
-// excluded: real data shows it used inconsistently (some transfers are
-// within the LGU), so it stays a manual call rather than an automatic one.
+// Appointment's sMode) — these statuses mean the employee has left the
+// service (or this LGU's payroll) for good.
 const EMPLOYEE_INACTIVATING_STATUSES: Record<string, string> = {
   DT: 'Death',
   RT: 'Retired',
   RS: 'Resigned',
+  TO: 'Transfer Out',
 };
 
 @Injectable()
