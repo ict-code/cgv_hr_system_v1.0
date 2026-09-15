@@ -397,8 +397,31 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
     },
   });
 
+  const generatePds = useMutation({
+    mutationFn: () =>
+      apiDownload(
+        `/employees/${id}/pds/export`,
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+        `${emp.lastName}-${emp.firstName}-PDS.xlsx`,
+      ),
+  });
+
   return (
     <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle>Personal Data Sheet</CardTitle>
+          <Button size="sm" onClick={() => generatePds.mutate()} disabled={generatePds.isPending}>
+            {generatePds.isPending ? "Generating…" : "Generate PDS"}
+          </Button>
+        </CardHeader>
+        {generatePds.isError && (
+          <CardContent className="pt-0">
+            <p className="text-sm text-[var(--color-danger)]">{(generatePds.error as Error).message}</p>
+          </CardContent>
+        )}
+      </Card>
+
       {currentAppointment && (
         <Card>
           <CardHeader>
