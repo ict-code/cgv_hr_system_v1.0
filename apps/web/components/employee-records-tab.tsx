@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,6 +47,7 @@ export function EmployeeRecordsTab<T extends { id: string }>({
   const apiPath = `/employees/${employeeId}/${resourcePath}`;
   const queryKey = ["employees", employeeId, queryKeySuffix];
   const [form, setForm] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const list = useQuery({
@@ -62,18 +64,22 @@ export function EmployeeRecordsTab<T extends { id: string }>({
     if (page > pageCount) setPage(pageCount);
   }, [page, pageCount]);
 
-  const create = useMutation({
+  const save = useMutation({
     mutationFn: () => {
       const body: Record<string, string | number | undefined> = {};
       for (const field of fields) {
         const raw = form[field.key];
         body[field.key] = field.type === "number" ? (raw ? Number(raw) : undefined) : raw || undefined;
       }
+      if (editingId) {
+        return apiFetch<T>(`${apiPath}/${editingId}`, { method: "PATCH", body: JSON.stringify(body) });
+      }
       return apiFetch<T>(apiPath, { method: "POST", body: JSON.stringify(body) });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setForm({});
+      setEditingId(null);
     },
   });
 
@@ -81,6 +87,27 @@ export function EmployeeRecordsTab<T extends { id: string }>({
     mutationFn: (id: string) => apiFetch(`${apiPath}/${id}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
+
+  function startEdit(row: T) {
+    const next: Record<string, string> = {};
+    for (const field of fields) {
+      const value = row[field.key as keyof T];
+      if (value === null || value === undefined) {
+        next[field.key] = "";
+      } else if (field.type === "date" && typeof value === "string") {
+        next[field.key] = value.slice(0, 10);
+      } else {
+        next[field.key] = String(value);
+      }
+    }
+    setForm(next);
+    setEditingId(row.id);
+  }
+
+  function cancelEdit() {
+    setForm({});
+    setEditingId(null);
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -90,7 +117,7 @@ export function EmployeeRecordsTab<T extends { id: string }>({
             {columns.map((col) => (
               <TableHead key={col.key}>{col.label}</TableHead>
             ))}
-            <TableHead className="w-10" />
+            <TableHead className="w-16" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -109,19 +136,29 @@ export function EmployeeRecordsTab<T extends { id: string }>({
             </TableRow>
           )}
           {rows.map((row) => (
-            <TableRow key={row.id}>
+            <TableRow key={row.id} className={row.id === editingId ? "bg-brand-50" : undefined}>
               {columns.map((col) => (
                 <TableCell key={col.key}>{col.render ? col.render(row) : String(row[col.key] ?? "—")}</TableCell>
               ))}
               <TableCell>
-                <button
-                  type="button"
-                  onClick={() => remove.mutate(row.id)}
-                  className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                  aria-label="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => startEdit(row)}
+                    className="text-[var(--color-muted)] hover:text-foreground"
+                    aria-label="Edit"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => remove.mutate(row.id)}
+                    className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -132,9 +169,12 @@ export function EmployeeRecordsTab<T extends { id: string }>({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          create.mutate();
+          save.mutate();
         }}
-        className="flex flex-wrap items-end gap-3 rounded-md border border-[var(--color-border)] p-3"
+        className={cn(
+          "flex flex-wrap items-end gap-3 rounded-md border p-3",
+          editingId ? "border-brand-300 bg-brand-50/40" : "border-[var(--color-border)]",
+        )}
       >
         {fields.map((field) => (
           <div key={field.key} className="flex flex-col gap-1.5">
@@ -166,10 +206,16 @@ export function EmployeeRecordsTab<T extends { id: string }>({
             )}
           </div>
         ))}
-        <Button type="submit" size="sm" disabled={create.isPending}>
-          {create.isPending ? "Adding…" : "Add"}
+        <Button type="submit" size="sm" disabled={save.isPending}>
+          {save.isPending ? "Saving…" : editingId ? "Save" : "Add"}
         </Button>
-        {create.isError && <p className="text-sm text-[var(--color-danger)]">{(create.error as Error).message}</p>}
+        {editingId && (
+          <Button type="button" variant="outline" size="sm" onClick={cancelEdit}>
+            <X className="h-3.5 w-3.5" />
+            Cancel
+          </Button>
+        )}
+        {save.isError && <p className="text-sm text-[var(--color-danger)]">{(save.error as Error).message}</p>}
       </form>
     </div>
   );

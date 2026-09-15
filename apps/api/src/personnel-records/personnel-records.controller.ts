@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PermissionsGuard } from '../auth/permissions.guard.js';
 import { RequirePermissions } from '../auth/require-permissions.decorator.js';
@@ -12,6 +12,11 @@ import { CreateDependentDto } from './dto/create-dependent.dto.js';
 import { CreateVoluntaryWorkDto } from './dto/create-voluntary-work.dto.js';
 import { CreateDistinctionDto } from './dto/create-distinction.dto.js';
 import { CreateOrgMembershipDto } from './dto/create-org-membership.dto.js';
+import { UpdateEducationDto } from './dto/update-education.dto.js';
+import { UpdateEligibilityDto } from './dto/update-eligibility.dto.js';
+import { UpdateWorkExperienceDto } from './dto/update-work-experience.dto.js';
+import { UpdateTrainingDto } from './dto/update-training.dto.js';
+import { UpdateVoluntaryWorkDto } from './dto/update-voluntary-work.dto.js';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('employees/:employeeId')
@@ -28,6 +33,12 @@ export class PersonnelRecordsController {
   @Post('education')
   createEducation(@Param('employeeId') employeeId: string, @Body() dto: CreateEducationDto) {
     return this.records.createEducation(employeeId, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Patch('education/:id')
+  updateEducation(@Param('employeeId') employeeId: string, @Param('id') id: string, @Body() dto: UpdateEducationDto) {
+    return this.records.updateEducation(employeeId, id, dto);
   }
 
   @RequirePermissions('personnel:edit')
@@ -49,6 +60,12 @@ export class PersonnelRecordsController {
   }
 
   @RequirePermissions('personnel:edit')
+  @Patch('eligibility/:id')
+  updateEligibility(@Param('employeeId') employeeId: string, @Param('id') id: string, @Body() dto: UpdateEligibilityDto) {
+    return this.records.updateEligibility(employeeId, id, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
   @Delete('eligibility/:id')
   deleteEligibility(@Param('employeeId') employeeId: string, @Param('id') id: string) {
     return this.records.deleteEligibility(employeeId, id);
@@ -67,6 +84,16 @@ export class PersonnelRecordsController {
   }
 
   @RequirePermissions('personnel:edit')
+  @Patch('work-experience/:id')
+  updateWorkExperience(
+    @Param('employeeId') employeeId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateWorkExperienceDto,
+  ) {
+    return this.records.updateWorkExperience(employeeId, id, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
   @Delete('work-experience/:id')
   deleteWorkExperience(@Param('employeeId') employeeId: string, @Param('id') id: string) {
     return this.records.deleteWorkExperience(employeeId, id);
@@ -82,6 +109,12 @@ export class PersonnelRecordsController {
   @Post('training')
   createTraining(@Param('employeeId') employeeId: string, @Body() dto: CreateTrainingDto) {
     return this.records.createTraining(employeeId, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Patch('training/:id')
+  updateTraining(@Param('employeeId') employeeId: string, @Param('id') id: string, @Body() dto: UpdateTrainingDto) {
+    return this.records.updateTraining(employeeId, id, dto);
   }
 
   @RequirePermissions('personnel:edit')
@@ -136,6 +169,16 @@ export class PersonnelRecordsController {
   @Post('voluntary-work')
   createVoluntaryWork(@Param('employeeId') employeeId: string, @Body() dto: CreateVoluntaryWorkDto) {
     return this.records.createVoluntaryWork(employeeId, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Patch('voluntary-work/:id')
+  updateVoluntaryWork(
+    @Param('employeeId') employeeId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateVoluntaryWorkDto,
+  ) {
+    return this.records.updateVoluntaryWork(employeeId, id, dto);
   }
 
   @RequirePermissions('personnel:edit')

@@ -9,6 +9,11 @@ import type { CreateDependentDto } from './dto/create-dependent.dto.js';
 import type { CreateVoluntaryWorkDto } from './dto/create-voluntary-work.dto.js';
 import type { CreateDistinctionDto } from './dto/create-distinction.dto.js';
 import type { CreateOrgMembershipDto } from './dto/create-org-membership.dto.js';
+import type { UpdateEducationDto } from './dto/update-education.dto.js';
+import type { UpdateEligibilityDto } from './dto/update-eligibility.dto.js';
+import type { UpdateWorkExperienceDto } from './dto/update-work-experience.dto.js';
+import type { UpdateTrainingDto } from './dto/update-training.dto.js';
+import type { UpdateVoluntaryWorkDto } from './dto/update-voluntary-work.dto.js';
 
 @Injectable()
 export class PersonnelRecordsService {
@@ -21,6 +26,10 @@ export class PersonnelRecordsService {
 
   createEducation(employeeId: string, dto: CreateEducationDto) {
     return this.prisma.employeeEducation.create({ data: { employeeId, ...dto } });
+  }
+
+  updateEducation(employeeId: string, id: string, dto: UpdateEducationDto) {
+    return this.prisma.employeeEducation.update({ where: { id, employeeId }, data: dto });
   }
 
   deleteEducation(employeeId: string, id: string) {
@@ -36,6 +45,10 @@ export class PersonnelRecordsService {
     return this.prisma.employeeEligibility.create({ data: { employeeId, ...dto } });
   }
 
+  updateEligibility(employeeId: string, id: string, dto: UpdateEligibilityDto) {
+    return this.prisma.employeeEligibility.update({ where: { id, employeeId }, data: dto });
+  }
+
   deleteEligibility(employeeId: string, id: string) {
     return this.prisma.employeeEligibility.delete({ where: { id, employeeId } });
   }
@@ -49,6 +62,10 @@ export class PersonnelRecordsService {
     return this.prisma.employeeWorkExperience.create({ data: { employeeId, ...dto } });
   }
 
+  updateWorkExperience(employeeId: string, id: string, dto: UpdateWorkExperienceDto) {
+    return this.prisma.employeeWorkExperience.update({ where: { id, employeeId }, data: dto });
+  }
+
   deleteWorkExperience(employeeId: string, id: string) {
     return this.prisma.employeeWorkExperience.delete({ where: { id, employeeId } });
   }
@@ -60,6 +77,10 @@ export class PersonnelRecordsService {
 
   createTraining(employeeId: string, dto: CreateTrainingDto) {
     return this.prisma.employeeTraining.create({ data: { employeeId, ...dto } });
+  }
+
+  updateTraining(employeeId: string, id: string, dto: UpdateTrainingDto) {
+    return this.prisma.employeeTraining.update({ where: { id, employeeId }, data: dto });
   }
 
   deleteTraining(employeeId: string, id: string) {
@@ -99,6 +120,10 @@ export class PersonnelRecordsService {
 
   createVoluntaryWork(employeeId: string, dto: CreateVoluntaryWorkDto) {
     return this.prisma.employeeVoluntaryWork.create({ data: { employeeId, ...dto } });
+  }
+
+  updateVoluntaryWork(employeeId: string, id: string, dto: UpdateVoluntaryWorkDto) {
+    return this.prisma.employeeVoluntaryWork.update({ where: { id, employeeId }, data: dto });
   }
 
   deleteVoluntaryWork(employeeId: string, id: string) {
