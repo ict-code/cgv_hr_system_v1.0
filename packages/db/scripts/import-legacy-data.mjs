@@ -361,20 +361,42 @@ async function main() {
   });
 
   // --- Education ---------------------------------------------------------------
+  // Legacy School-Year is still exported as one concatenated field (e.g.
+  // "20002006") — same three formats the 20260915084020_pds_fields migration
+  // backfilled from the real DB: 8-digit both-glued, "YYYY YYYY" spaced, or a
+  // single "YYYY" (both ends the same year). yearGraduated has no legacy
+  // source — left null, same as that migration's backfill.
+  function attendanceYears(schoolYear) {
+    if (/^[0-9]{8}$/.test(schoolYear)) {
+      return [Number(schoolYear.slice(0, 4)), Number(schoolYear.slice(4, 8))];
+    }
+    if (/^[0-9]{4} [0-9]{4}$/.test(schoolYear)) {
+      const [from, to] = schoolYear.split(' ');
+      return [Number(from), Number(to)];
+    }
+    if (/^[0-9]{4}$/.test(schoolYear)) {
+      return [Number(schoolYear), Number(schoolYear)];
+    }
+    return [undefined, undefined];
+  }
   await importChildTable({
     file: 'education.txt',
     table: 'education',
     model: dryRun ? null : prisma.employeeEducation,
-    keyOf: (data) => `${data.employeeId}|${data.level}|${data.schoolName}|${data.schoolYear ?? ''}`,
-    dataOf: (row, employeeId) => ({
-      employeeId,
-      level: row.level || 'Unknown',
-      schoolName: row.schoolName || 'Unknown',
-      schoolYear: s(row.schoolYear),
-      course: s(row.course),
-      degree: s(row.degree),
-      honors: s(row.honors),
-    }),
+    keyOf: (data) => `${data.employeeId}|${data.level}|${data.schoolName}|${data.attendanceFrom ?? ''}|${data.attendanceTo ?? ''}`,
+    dataOf: (row, employeeId) => {
+      const [attendanceFrom, attendanceTo] = attendanceYears(row.schoolYear ?? '');
+      return {
+        employeeId,
+        level: row.level || 'Unknown',
+        schoolName: row.schoolName || 'Unknown',
+        attendanceFrom,
+        attendanceTo,
+        course: s(row.course),
+        degree: s(row.degree),
+        honors: s(row.honors),
+      };
+    },
   });
 
   // --- Eligibility ---------------------------------------------------------------
