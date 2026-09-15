@@ -26,11 +26,18 @@ export const REGULAR_ELECTED_STATUSES = ["P", "EL", "CT"];
 export const CASUAL_STATUSES = ["CS"];
 export const CONTRACTUAL_STATUSES = ["CL", "JO", "SC", "MC", "CC", "CO"];
 
+export const APPOINTMENT_STATUS_MODES = ["ENTRY", "EXIT"] as const;
+export const APPOINTMENT_STATUS_MODE_LABELS: Record<string, string> = {
+  ENTRY: "Entry",
+  EXIT: "Exit",
+};
+
 export type AppointmentStatusCode = {
   id: string;
   code: string;
   description: string;
   active: boolean;
+  mode: (typeof APPOINTMENT_STATUS_MODES)[number] | null;
 };
 
 export type EmploymentStatusCode = {

@@ -103,6 +103,15 @@ model Department {
   @@map("departments")
 }
 
+/// AppointmentStatusCode.mode — HR-editable classification of what a status
+/// code means for an employee's standing: ENTRY (joining/returning to
+/// service), EXIT (leaving it, drives the Employee.inactive auto-sync), or
+/// unset (a lateral change like Promotion/Salary Adjustment, affects neither).
+enum AppointmentStatusMode {
+  ENTRY
+  EXIT
+}
+
 /// Legacy AppointStatus lookup table (Master Data > Appointment Status File).
 /// Not a hard FK from Appointment.status — informational/editable labels only,
 /// same as legacy itself (see Appointment.status's doc comment).
@@ -111,6 +120,7 @@ model AppointmentStatusCode {
   code        String  @unique
   description String
   active      Boolean @default(true)
+  mode        AppointmentStatusMode?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -6,18 +6,24 @@ import { useEffect, useState } from "react";
 import { apiFetch, apiFetchAll } from "@/lib/api";
 import { exportRowsToExcel } from "@/lib/export-excel";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import type { AppointmentStatusCode, PaginatedResult } from "@/lib/types";
+import {
+  APPOINTMENT_STATUS_MODE_LABELS,
+  APPOINTMENT_STATUS_MODES,
+  type AppointmentStatusCode,
+  type PaginatedResult,
+} from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
 
 const PAGE_SIZE = 20;
-const emptyForm = { code: "", description: "" };
+const emptyForm = { code: "", description: "", mode: "" };
 
 export default function AppointmentStatusesPage() {
   const queryClient = useQueryClient();
@@ -61,7 +67,7 @@ export default function AppointmentStatusesPage() {
     mutationFn: () =>
       apiFetch<AppointmentStatusCode>("/appointment-statuses", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, mode: form.mode || null }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/appointment-statuses"] });
@@ -74,7 +80,7 @@ export default function AppointmentStatusesPage() {
     mutationFn: () =>
       apiFetch<AppointmentStatusCode>(`/appointment-statuses/${editingId}`, {
         method: "PATCH",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, mode: form.mode || null }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/appointment-statuses"] });
@@ -106,7 +112,7 @@ export default function AppointmentStatusesPage() {
 
   function openEditDialog(row: AppointmentStatusCode) {
     setEditingId(row.id);
-    setForm({ code: row.code, description: row.description });
+    setForm({ code: row.code, description: row.description, mode: row.mode ?? "" });
     setDialogOpen(true);
   }
 
@@ -124,9 +130,15 @@ export default function AppointmentStatusesPage() {
         columns: [
           { header: "Code", key: "code" },
           { header: "Description", key: "description" },
+          { header: "Mode", key: "mode" },
           { header: "Status", key: "status" },
         ],
-        rows: all.map((r) => ({ code: r.code, description: r.description, status: r.active ? "Active" : "Inactive" })),
+        rows: all.map((r) => ({
+          code: r.code,
+          description: r.description,
+          mode: r.mode ? APPOINTMENT_STATUS_MODE_LABELS[r.mode] : "",
+          status: r.active ? "Active" : "Inactive",
+        })),
       });
     } finally {
       setExporting(false);
@@ -159,6 +171,7 @@ export default function AppointmentStatusesPage() {
             <TableRow>
               <TableHead>Code</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead>Mode</TableHead>
               <TableHead>Status</TableHead>
               {(canEdit || canDelete) && <TableHead className="w-32" />}
             </TableRow>
@@ -166,14 +179,14 @@ export default function AppointmentStatusesPage() {
           <TableBody>
             {list.isLoading && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-[var(--color-muted)]">
+                <TableCell colSpan={5} className="text-center text-[var(--color-muted)]">
                   Loading…
                 </TableCell>
               </TableRow>
             )}
             {!list.isLoading && rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-[var(--color-muted)]">
+                <TableCell colSpan={5} className="text-center text-[var(--color-muted)]">
                   No records yet.
                 </TableCell>
               </TableRow>
@@ -182,6 +195,7 @@ export default function AppointmentStatusesPage() {
               <TableRow key={row.id}>
                 <TableCell className="font-semibold">{row.code}</TableCell>
                 <TableCell>{row.description}</TableCell>
+                <TableCell>{row.mode ? APPOINTMENT_STATUS_MODE_LABELS[row.mode] : "—"}</TableCell>
                 <TableCell>
                   <Badge variant={row.active ? "success" : "default"}>{row.active ? "Active" : "Inactive"}</Badge>
                 </TableCell>
@@ -250,6 +264,17 @@ export default function AppointmentStatusesPage() {
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="mode">Mode</Label>
+            <Select id="mode" value={form.mode} onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}>
+              <option value="">—</option>
+              {APPOINTMENT_STATUS_MODES.map((m) => (
+                <option key={m} value={m}>
+                  {APPOINTMENT_STATUS_MODE_LABELS[m]}
+                </option>
+              ))}
+            </Select>
           </div>
           {(create.isError || update.isError) && (
             <p className="text-sm text-[var(--color-danger)]">{((create.error ?? update.error) as Error).message}</p>

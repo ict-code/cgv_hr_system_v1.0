@@ -1,4 +1,5 @@
-import { IsString } from 'class-validator';
+import { AppointmentStatusMode } from '@egaps/db';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class CreateAppointmentStatusDto {
   @IsString()
@@ -6,4 +7,8 @@ export class CreateAppointmentStatusDto {
 
   @IsString()
   description!: string;
+
+  @IsOptional()
+  @IsEnum(AppointmentStatusMode)
+  mode?: AppointmentStatusMode;
 }

@@ -26,30 +26,22 @@ export function Badge({ className, variant, ...props }: BadgeProps) {
   return <span className={cn(badgeVariants({ variant }), className)} {...props} />;
 }
 
-// Legacy AppointmentStatus codes (PERSONNEL_ANALYSIS.md §2) grouped by what
-// they mean for an employee's standing, not their literal letters.
-const INACTIVE_APPOINTMENT_STATUSES = new Set(["DT", "RS", "RT", "TO"]);
-const NEW_APPOINTMENT_STATUSES = new Set(["AP", "NE", "OA", "EL", "RA", "RI", "RM", "RN", "TN"]);
-
 export function AppointmentStatusBadge({ status }: { status: string }) {
   // Cached across every badge instance on the page — one request, not one
   // per badge. Live lookup against Master Data > Appointment Status File so
-  // an edited/added description shows up here without a code change.
+  // an edited/added description AND mode (Entry/Exit) shows up here without
+  // a code change.
   const { data } = useQuery({
     queryKey: ["/appointment-statuses"],
     queryFn: () => apiFetchAll<AppointmentStatusCode>("/appointment-statuses"),
     staleTime: 5 * 60 * 1000,
   });
-  const description = data?.find((s) => s.code === status)?.description;
+  const statusCode = data?.find((s) => s.code === status);
 
-  const variant = INACTIVE_APPOINTMENT_STATUSES.has(status)
-    ? "danger"
-    : NEW_APPOINTMENT_STATUSES.has(status)
-      ? "success"
-      : "info";
+  const variant = statusCode?.mode === "EXIT" ? "danger" : statusCode?.mode === "ENTRY" ? "success" : "info";
 
   return (
-    <Badge variant={variant} title={description}>
+    <Badge variant={variant} title={statusCode?.description}>
       {status}
     </Badge>
   );

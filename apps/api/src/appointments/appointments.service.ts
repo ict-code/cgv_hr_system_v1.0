@@ -7,18 +7,11 @@ import { toServiceRecordCreateData } from '../service-records/service-record-map
 
 // Legacy sMode: 1=active, 2=inactive, CONFIRMED derived from which
 // AppointmentStatus is set (PERSONNEL_ANALYSIS.md §5). These four statuses
-// represent an employee leaving this department/the service.
+// represent an employee leaving this department/the service. Kept as a
+// fixed, legacy-verified set — separate from AppointmentStatusCode.mode
+// (Master Data > Appointment Status File), which is HR-editable and drives
+// the Employee.inactive auto-sync below instead.
 const INACTIVE_STATUSES = new Set(['DT', 'RS', 'RT', 'TO']);
-
-// Narrower set that also flips Employee.inactive itself (not just this
-// Appointment's sMode) — these statuses mean the employee has left the
-// service (or this LGU's payroll) for good.
-const EMPLOYEE_INACTIVATING_STATUSES: Record<string, string> = {
-  DT: 'Death',
-  RT: 'Retired',
-  RS: 'Resigned',
-  TO: 'Transfer Out',
-};
 
 @Injectable()
 export class AppointmentsService {
@@ -190,11 +183,11 @@ export class AppointmentsService {
         },
       });
 
-      const inactivatingCause = EMPLOYEE_INACTIVATING_STATUSES[dto.status];
-      if (inactivatingCause) {
+      const statusCode = await tx.appointmentStatusCode.findUnique({ where: { code: dto.status } });
+      if (statusCode?.mode === 'EXIT') {
         await tx.employee.update({
           where: { id: employeeId },
-          data: { inactive: true, dateInactivated: dto.effectDate, inactiveCause: inactivatingCause },
+          data: { inactive: true, dateInactivated: dto.effectDate, inactiveCause: statusCode.description },
         });
       }
 
