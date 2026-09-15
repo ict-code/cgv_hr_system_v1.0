@@ -9,6 +9,9 @@ import { CreateWorkExperienceDto } from './dto/create-work-experience.dto.js';
 import { CreateTrainingDto } from './dto/create-training.dto.js';
 import { CreateSkillDto } from './dto/create-skill.dto.js';
 import { CreateDependentDto } from './dto/create-dependent.dto.js';
+import { CreateVoluntaryWorkDto } from './dto/create-voluntary-work.dto.js';
+import { CreateDistinctionDto } from './dto/create-distinction.dto.js';
+import { CreateOrgMembershipDto } from './dto/create-org-membership.dto.js';
 
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('employees/:employeeId')
@@ -121,5 +124,59 @@ export class PersonnelRecordsController {
   @Delete('dependents/:id')
   deleteDependent(@Param('employeeId') employeeId: string, @Param('id') id: string) {
     return this.records.deleteDependent(employeeId, id);
+  }
+
+  // --- Voluntary work ------------------------------------------------------
+  @Get('voluntary-work')
+  findVoluntaryWork(@Param('employeeId') employeeId: string) {
+    return this.records.findVoluntaryWork(employeeId);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Post('voluntary-work')
+  createVoluntaryWork(@Param('employeeId') employeeId: string, @Body() dto: CreateVoluntaryWorkDto) {
+    return this.records.createVoluntaryWork(employeeId, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Delete('voluntary-work/:id')
+  deleteVoluntaryWork(@Param('employeeId') employeeId: string, @Param('id') id: string) {
+    return this.records.deleteVoluntaryWork(employeeId, id);
+  }
+
+  // --- Non-academic distinctions --------------------------------------------
+  @Get('distinctions')
+  findDistinctions(@Param('employeeId') employeeId: string) {
+    return this.records.findDistinctions(employeeId);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Post('distinctions')
+  createDistinction(@Param('employeeId') employeeId: string, @Body() dto: CreateDistinctionDto) {
+    return this.records.createDistinction(employeeId, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Delete('distinctions/:id')
+  deleteDistinction(@Param('employeeId') employeeId: string, @Param('id') id: string) {
+    return this.records.deleteDistinction(employeeId, id);
+  }
+
+  // --- Association/organization memberships ---------------------------------
+  @Get('org-memberships')
+  findOrgMemberships(@Param('employeeId') employeeId: string) {
+    return this.records.findOrgMemberships(employeeId);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Post('org-memberships')
+  createOrgMembership(@Param('employeeId') employeeId: string, @Body() dto: CreateOrgMembershipDto) {
+    return this.records.createOrgMembership(employeeId, dto);
+  }
+
+  @RequirePermissions('personnel:edit')
+  @Delete('org-memberships/:id')
+  deleteOrgMembership(@Param('employeeId') employeeId: string, @Param('id') id: string) {
+    return this.records.deleteOrgMembership(employeeId, id);
   }
 }

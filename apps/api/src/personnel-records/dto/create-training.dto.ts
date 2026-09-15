@@ -1,5 +1,6 @@
+import { LearningDevelopmentType } from '@egaps/db';
 import { Type } from 'class-transformer';
-import { IsDate, IsInt, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateTrainingDto {
   @IsString()
@@ -26,4 +27,8 @@ export class CreateTrainingDto {
   @IsOptional()
   @IsInt()
   numberOfHours?: number;
+
+  @IsOptional()
+  @IsEnum(LearningDevelopmentType)
+  type?: LearningDevelopmentType;
 }

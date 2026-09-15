@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
+import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const PAGE_SIZE = 10;
@@ -15,8 +16,9 @@ const PAGE_SIZE = 10;
 export type RecordField = {
   key: string;
   label: string;
-  type: "text" | "number" | "date";
+  type: "text" | "number" | "date" | "select";
   required?: boolean;
+  options?: { value: string; label: string }[];
 };
 
 export type RecordColumn<T> = {
@@ -137,14 +139,31 @@ export function EmployeeRecordsTab<T extends { id: string }>({
         {fields.map((field) => (
           <div key={field.key} className="flex flex-col gap-1.5">
             <Label htmlFor={field.key}>{field.label}</Label>
-            <Input
-              id={field.key}
-              type={field.type}
-              required={field.required}
-              value={form[field.key] ?? ""}
-              onChange={(e) => setForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
-              className="w-44"
-            />
+            {field.type === "select" ? (
+              <Select
+                id={field.key}
+                required={field.required}
+                value={form[field.key] ?? ""}
+                onChange={(e) => setForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                className="w-44"
+              >
+                <option value="">—</option>
+                {field.options?.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+            ) : (
+              <Input
+                id={field.key}
+                type={field.type}
+                required={field.required}
+                value={form[field.key] ?? ""}
+                onChange={(e) => setForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                className="w-44"
+              />
+            )}
           </div>
         ))}
         <Button type="submit" size="sm" disabled={create.isPending}>

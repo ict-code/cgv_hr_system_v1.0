@@ -16,6 +16,8 @@ import {
 } from "@/lib/service-record-import";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
+  LEARNING_DEVELOPMENT_TYPES,
+  LEARNING_DEVELOPMENT_TYPE_LABELS,
   PAY_MODE_LABELS,
   PAY_MODES,
   WORK_LEVEL_LABELS,
@@ -27,6 +29,7 @@ import {
   type EmployeeEligibility,
   type EmploymentStatusCode,
   type EmployeeTraining,
+  type EmployeeVoluntaryWork,
   type EmployeeWorkExperience,
   type Position,
   type SalaryGrade,
@@ -77,6 +80,7 @@ const TABS = [
   { key: "eligibility", label: "Eligibility" },
   { key: "work-experience", label: "Work Experience" },
   { key: "training", label: "Training/Seminars" },
+  { key: "voluntary-work", label: "Voluntary Work" },
   { key: "service-record", label: "Service Record" },
 ] as const;
 
@@ -140,6 +144,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
       {tab === "eligibility" && <EligibilityTab employee={emp} />}
       {tab === "work-experience" && <WorkExperienceTab employee={emp} />}
       {tab === "training" && <TrainingTab employee={emp} />}
+      {tab === "voluntary-work" && <VoluntaryWorkTab employee={emp} />}
       {tab === "service-record" && <ServiceRecordTab employee={emp} />}
     </div>
   );
@@ -149,14 +154,22 @@ function EducationTab({ employee }: { employee: EmployeeDetail }) {
   const columns: RecordColumn<EmployeeEducation>[] = [
     { key: "level", label: "Level" },
     { key: "schoolName", label: "School/University/College" },
-    { key: "schoolYear", label: "School Year" },
+    {
+      key: "attendanceFrom",
+      label: "Period of Attendance",
+      render: (row) =>
+        row.attendanceFrom || row.attendanceTo ? `${row.attendanceFrom ?? "—"} - ${row.attendanceTo ?? "—"}` : "—",
+    },
+    { key: "yearGraduated", label: "Year Graduated" },
     { key: "course", label: "Course/Degree", render: (row) => row.course ?? row.degree ?? "—" },
     { key: "honors", label: "Honors" },
   ];
   const fields: RecordField[] = [
     { key: "level", label: "Level", type: "text", required: true },
     { key: "schoolName", label: "School/University/College", type: "text", required: true },
-    { key: "schoolYear", label: "School Year", type: "text" },
+    { key: "attendanceFrom", label: "Attendance From (year)", type: "number" },
+    { key: "attendanceTo", label: "Attendance To (year)", type: "number" },
+    { key: "yearGraduated", label: "Year Graduated", type: "number" },
     { key: "course", label: "Course", type: "text" },
     { key: "degree", label: "Degree", type: "text" },
     { key: "honors", label: "Honor(s)", type: "text" },
@@ -186,12 +199,16 @@ function EligibilityTab({ employee }: { employee: EmployeeDetail }) {
     { key: "examDate", label: "Date(s)", render: (row) => formatDate(row.examDate) },
     { key: "examPlace", label: "Place of Examination" },
     { key: "rating", label: "Rating" },
+    { key: "licenseNumber", label: "License No." },
+    { key: "licenseValidity", label: "License Validity", render: (row) => formatDate(row.licenseValidity) },
   ];
   const fields: RecordField[] = [
     { key: "examName", label: "Examination/BAR", type: "text", required: true },
     { key: "examDate", label: "Examination Date", type: "date" },
     { key: "examPlace", label: "Place", type: "text" },
     { key: "rating", label: "Rating", type: "text" },
+    { key: "licenseNumber", label: "License No.", type: "text" },
+    { key: "licenseValidity", label: "License Date of Validity", type: "date" },
   ];
   return (
     <Card>
@@ -256,6 +273,7 @@ function TrainingTab({ employee }: { employee: EmployeeDetail }) {
     { key: "periodCovered", label: "Period Covered" },
     { key: "conductor", label: "Conductor" },
     { key: "numberOfHours", label: "No. of Hours" },
+    { key: "type", label: "Type of L&D", render: (row) => (row.type ? LEARNING_DEVELOPMENT_TYPE_LABELS[row.type] : "—") },
   ];
   const fields: RecordField[] = [
     { key: "trainingName", label: "Training/Study/Seminar", type: "text", required: true },
@@ -264,6 +282,12 @@ function TrainingTab({ employee }: { employee: EmployeeDetail }) {
     { key: "conductor", label: "Conductor", type: "text" },
     { key: "periodCovered", label: "Period Covered", type: "text" },
     { key: "numberOfHours", label: "No. of Hours", type: "number" },
+    {
+      key: "type",
+      label: "Type of L&D",
+      type: "select",
+      options: LEARNING_DEVELOPMENT_TYPES.map((t) => ({ value: t, label: LEARNING_DEVELOPMENT_TYPE_LABELS[t] })),
+    },
   ];
   return (
     <Card>
@@ -278,6 +302,42 @@ function TrainingTab({ employee }: { employee: EmployeeDetail }) {
           columns={columns}
           fields={fields}
           emptyLabel="No training records yet."
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function VoluntaryWorkTab({ employee }: { employee: EmployeeDetail }) {
+  const columns: RecordColumn<EmployeeVoluntaryWork>[] = [
+    { key: "organization", label: "Organization" },
+    { key: "address", label: "Address" },
+    { key: "startDate", label: "From", render: (row) => formatDate(row.startDate) },
+    { key: "endDate", label: "To", render: (row) => formatDate(row.endDate) },
+    { key: "numberOfHours", label: "No. of Hours" },
+    { key: "position", label: "Position/Nature of Work" },
+  ];
+  const fields: RecordField[] = [
+    { key: "organization", label: "Name of Organization", type: "text", required: true },
+    { key: "address", label: "Address", type: "text" },
+    { key: "startDate", label: "From", type: "date" },
+    { key: "endDate", label: "To", type: "date" },
+    { key: "numberOfHours", label: "No. of Hours", type: "number" },
+    { key: "position", label: "Position/Nature of Work", type: "text" },
+  ];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Voluntary Work / Civic Involvement</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <EmployeeRecordsTab<EmployeeVoluntaryWork>
+          employeeId={employee.id}
+          resourcePath="voluntary-work"
+          queryKeySuffix="voluntary-work"
+          columns={columns}
+          fields={fields}
+          emptyLabel="No voluntary work records yet."
         />
       </CardContent>
     </Card>

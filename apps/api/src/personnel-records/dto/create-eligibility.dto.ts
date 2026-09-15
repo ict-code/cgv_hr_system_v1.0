@@ -17,4 +17,13 @@ export class CreateEligibilityDto {
   @IsOptional()
   @IsString()
   rating?: string;
+
+  @IsOptional()
+  @IsString()
+  licenseNumber?: string;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  licenseValidity?: Date;
 }

@@ -82,6 +82,7 @@ export type Employee = {
   gsisNo: string | null;
   pagibigNo: string | null;
   philhealthNo: string | null;
+  philsysNo: string | null;
   address: string | null;
   telNo: string | null;
   cellNo: string | null;
@@ -189,7 +190,9 @@ export type EmployeeEducation = {
   id: string;
   level: string;
   schoolName: string;
-  schoolYear: string | null;
+  attendanceFrom: number | null;
+  attendanceTo: number | null;
+  yearGraduated: number | null;
   course: string | null;
   degree: string | null;
   honors: string | null;
@@ -201,6 +204,8 @@ export type EmployeeEligibility = {
   examDate: string | null;
   examPlace: string | null;
   rating: string | null;
+  licenseNumber: string | null;
+  licenseValidity: string | null;
 };
 
 export type EmployeeWorkExperience = {
@@ -214,6 +219,15 @@ export type EmployeeWorkExperience = {
   employmentStatus: string | null;
 };
 
+export const LEARNING_DEVELOPMENT_TYPES = ["MANAGERIAL", "SUPERVISORY", "TECHNICAL", "CLERICAL", "OTHERS"] as const;
+export const LEARNING_DEVELOPMENT_TYPE_LABELS: Record<string, string> = {
+  MANAGERIAL: "Managerial",
+  SUPERVISORY: "Supervisory",
+  TECHNICAL: "Technical",
+  CLERICAL: "Clerical",
+  OTHERS: "Others",
+};
+
 export type EmployeeTraining = {
   id: string;
   trainingName: string;
@@ -222,9 +236,30 @@ export type EmployeeTraining = {
   conductor: string | null;
   periodCovered: string | null;
   numberOfHours: number | null;
+  type: (typeof LEARNING_DEVELOPMENT_TYPES)[number] | null;
 };
 
 export type EmployeeSkill = {
+  id: string;
+  name: string;
+};
+
+export type EmployeeVoluntaryWork = {
+  id: string;
+  organization: string;
+  address: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  numberOfHours: number | null;
+  position: string | null;
+};
+
+export type EmployeeDistinction = {
+  id: string;
+  name: string;
+};
+
+export type EmployeeOrgMembership = {
   id: string;
   name: string;
 };
@@ -239,6 +274,9 @@ export type EmployeeDetail = Employee & {
   workExperience: EmployeeWorkExperience[];
   trainingRecords: EmployeeTraining[];
   skills: EmployeeSkill[];
+  voluntaryWork: EmployeeVoluntaryWork[];
+  distinctions: EmployeeDistinction[];
+  orgMemberships: EmployeeOrgMembership[];
 };
 
 export type Permission = {

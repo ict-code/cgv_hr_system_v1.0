@@ -80,6 +80,9 @@ export class EmployeesService {
         workExperience: { orderBy: { startDate: 'desc' } },
         trainingRecords: { orderBy: { createdAt: 'desc' } },
         skills: { orderBy: { createdAt: 'asc' } },
+        voluntaryWork: { orderBy: { startDate: 'desc' } },
+        distinctions: { orderBy: { createdAt: 'asc' } },
+        orgMemberships: { orderBy: { createdAt: 'asc' } },
       },
     });
 

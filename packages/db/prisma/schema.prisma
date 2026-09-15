@@ -64,6 +64,15 @@ enum AppointType {
   SPECIAL
 }
 
+/// EmployeeTraining.type — CS Form 212 Section VI "Type of L&D" classification.
+enum LearningDevelopmentType {
+  MANAGERIAL
+  SUPERVISORY
+  TECHNICAL
+  CLERICAL
+  OTHERS
+}
+
 // ---------------------------------------------------------------------------
 // Master data
 // ---------------------------------------------------------------------------
@@ -274,6 +283,7 @@ model Employee {
   gsisNo        String?
   pagibigNo     String?
   philhealthNo  String?
+  philsysNo     String? // PhilSys Card Number (PCN) — CS Form 212 item 13, not everyone has one yet
 
   address      String?
   telNo        String?
@@ -350,6 +360,9 @@ model Employee {
   workExperience       EmployeeWorkExperience[]
   trainingRecords      EmployeeTraining[]
   skills               EmployeeSkill[]
+  voluntaryWork        EmployeeVoluntaryWork[]
+  distinctions         EmployeeDistinction[]
+  orgMemberships       EmployeeOrgMembership[]
   plantillaItems       Plantilla[]
 
   createdAt DateTime @default(now())
@@ -368,7 +381,12 @@ model EmployeeEducation {
 
   level      String
   schoolName String
-  schoolYear String?
+  // Replaces the old single `schoolYear` free-text field (legacy stored it as
+  // an unseparated "20002006"-style concatenation) — split into real years,
+  // plus a year-graduated field the old column never captured at all.
+  attendanceFrom Int?
+  attendanceTo   Int?
+  yearGraduated  Int?
   course     String?
   degree     String?
   honors     String?
@@ -389,6 +407,8 @@ model EmployeeEligibility {
   examDate  DateTime?
   examPlace String?
   rating    String?
+  licenseNumber   String?
+  licenseValidity DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -429,6 +449,7 @@ model EmployeeTraining {
   conductor      String?
   periodCovered  String?
   numberOfHours  Int?
+  type           LearningDevelopmentType?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -447,6 +468,52 @@ model EmployeeSkill {
   createdAt DateTime @default(now())
 
   @@map("employee_skills")
+}
+
+/// CS Form 212 Section VII — Voluntary Work / civic involvement. No legacy
+/// backing table; new for the PDS generation feature.
+model EmployeeVoluntaryWork {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  organization  String
+  address       String?
+  startDate     DateTime?
+  endDate       DateTime?
+  numberOfHours Int?
+  position      String? // Position/Nature of Work
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("employee_voluntary_work")
+}
+
+/// CS Form 212 Section VIII item 32 — Non-Academic Distinctions/Recognition.
+/// Simple add/remove list, same shape as EmployeeSkill.
+model EmployeeDistinction {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  name       String
+
+  createdAt DateTime @default(now())
+
+  @@map("employee_distinctions")
+}
+
+/// CS Form 212 Section VIII item 33 — Membership in Association/Organization.
+/// Simple add/remove list, same shape as EmployeeSkill.
+model EmployeeOrgMembership {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  name       String
+
+  createdAt DateTime @default(now())
+
+  @@map("employee_org_memberships")
 }
 
 /// Normalizes legacy Personal.Child-Name[15]/Child-Age[15] EXTENT arrays into

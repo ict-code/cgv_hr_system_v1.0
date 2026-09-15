@@ -4,7 +4,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { apiFetch, apiFetchAll } from "@/lib/api";
-import type { Department, Division, EmployeeDetail, EmployeeSkill, SalaryGradeTable } from "@/lib/types";
+import type {
+  Department,
+  Division,
+  EmployeeDetail,
+  EmployeeDistinction,
+  EmployeeOrgMembership,
+  EmployeeSkill,
+  SalaryGradeTable,
+} from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -63,6 +71,8 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<FormState>(() => toFormState(employee));
   const [skillName, setSkillName] = useState("");
+  const [distinctionName, setDistinctionName] = useState("");
+  const [orgMembershipName, setOrgMembershipName] = useState("");
 
   const departments = useQuery({
     queryKey: ["/departments"],
@@ -121,6 +131,52 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
   const removeSkill = useMutation({
     mutationFn: (id: string) => apiFetch(`/employees/${employee.id}/skills/${id}`, { method: "DELETE" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees", employee.id, "skills"] }),
+  });
+
+  const distinctions = useQuery({
+    queryKey: ["employees", employee.id, "distinctions"],
+    queryFn: () => apiFetch<EmployeeDistinction[]>(`/employees/${employee.id}/distinctions`),
+    initialData: employee.distinctions,
+  });
+
+  const addDistinction = useMutation({
+    mutationFn: () =>
+      apiFetch<EmployeeDistinction>(`/employees/${employee.id}/distinctions`, {
+        method: "POST",
+        body: JSON.stringify({ name: distinctionName }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees", employee.id, "distinctions"] });
+      setDistinctionName("");
+    },
+  });
+
+  const removeDistinction = useMutation({
+    mutationFn: (id: string) => apiFetch(`/employees/${employee.id}/distinctions/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees", employee.id, "distinctions"] }),
+  });
+
+  const orgMemberships = useQuery({
+    queryKey: ["employees", employee.id, "org-memberships"],
+    queryFn: () => apiFetch<EmployeeOrgMembership[]>(`/employees/${employee.id}/org-memberships`),
+    initialData: employee.orgMemberships,
+  });
+
+  const addOrgMembership = useMutation({
+    mutationFn: () =>
+      apiFetch<EmployeeOrgMembership>(`/employees/${employee.id}/org-memberships`, {
+        method: "POST",
+        body: JSON.stringify({ name: orgMembershipName }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees", employee.id, "org-memberships"] });
+      setOrgMembershipName("");
+    },
+  });
+
+  const removeOrgMembership = useMutation({
+    mutationFn: (id: string) => apiFetch(`/employees/${employee.id}/org-memberships/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["employees", employee.id, "org-memberships"] }),
   });
 
   return (
@@ -268,6 +324,7 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
           <Field form={form} setForm={setForm} name="gsisNo" label="GSIS BP No." />
           <Field form={form} setForm={setForm} name="pagibigNo" label="Pagibig No." />
           <Field form={form} setForm={setForm} name="philhealthNo" label="PhilHealth No." />
+          <Field form={form} setForm={setForm} name="philsysNo" label="PhilSys Card No. (PCN)" />
           <Field form={form} setForm={setForm} name="bankAccountNo" label="Bank Acct. No." />
           <Field form={form} setForm={setForm} name="taxStatus" label="Tax status" />
         </CardContent>
@@ -309,6 +366,102 @@ export function PersonalDataTab({ employee }: { employee: EmployeeDetail }) {
               onClick={() => addSkill.mutate()}
             >
               {addSkill.isPending ? "Adding…" : "Add"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Non-Academic Distinctions / Recognition</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            {distinctions.data?.length === 0 && (
+              <p className="text-sm text-[var(--color-muted)]">No distinctions recorded yet.</p>
+            )}
+            {distinctions.data?.map((d) => (
+              <span
+                key={d.id}
+                className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700"
+              >
+                {d.name}
+                <button
+                  type="button"
+                  onClick={() => removeDistinction.mutate(d.id)}
+                  aria-label={`Remove ${d.name}`}
+                  className="text-slate-400 hover:text-[var(--color-danger)]"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex items-end gap-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="distinctionName">Add a distinction</Label>
+              <Input
+                id="distinctionName"
+                value={distinctionName}
+                onChange={(e) => setDistinctionName(e.target.value)}
+                className="w-56"
+              />
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!distinctionName || addDistinction.isPending}
+              onClick={() => addDistinction.mutate()}
+            >
+              {addDistinction.isPending ? "Adding…" : "Add"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Membership in Association/Organization</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            {orgMemberships.data?.length === 0 && (
+              <p className="text-sm text-[var(--color-muted)]">No memberships recorded yet.</p>
+            )}
+            {orgMemberships.data?.map((m) => (
+              <span
+                key={m.id}
+                className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700"
+              >
+                {m.name}
+                <button
+                  type="button"
+                  onClick={() => removeOrgMembership.mutate(m.id)}
+                  aria-label={`Remove ${m.name}`}
+                  className="text-slate-400 hover:text-[var(--color-danger)]"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex items-end gap-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="orgMembershipName">Add a membership</Label>
+              <Input
+                id="orgMembershipName"
+                value={orgMembershipName}
+                onChange={(e) => setOrgMembershipName(e.target.value)}
+                className="w-56"
+              />
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!orgMembershipName || addOrgMembership.isPending}
+              onClick={() => addOrgMembership.mutate()}
+            >
+              {addOrgMembership.isPending ? "Adding…" : "Add"}
             </Button>
           </div>
         </CardContent>

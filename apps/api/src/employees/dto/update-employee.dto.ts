@@ -177,6 +177,10 @@ export class UpdateEmployeeDto extends PartialType(OmitType(CreateEmployeeDto, [
 
   @IsOptional()
   @IsString()
+  philsysNo?: string;
+
+  @IsOptional()
+  @IsString()
   address?: string;
 
   @IsOptional()

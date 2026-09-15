@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsInt, IsOptional, IsString } from 'class-validator';
 
 export class CreateEducationDto {
   @IsString()
@@ -8,8 +8,16 @@ export class CreateEducationDto {
   schoolName!: string;
 
   @IsOptional()
-  @IsString()
-  schoolYear?: string;
+  @IsInt()
+  attendanceFrom?: number;
+
+  @IsOptional()
+  @IsInt()
+  attendanceTo?: number;
+
+  @IsOptional()
+  @IsInt()
+  yearGraduated?: number;
 
   @IsOptional()
   @IsString()

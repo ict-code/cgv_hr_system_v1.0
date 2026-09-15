@@ -6,6 +6,9 @@ import type { CreateWorkExperienceDto } from './dto/create-work-experience.dto.j
 import type { CreateTrainingDto } from './dto/create-training.dto.js';
 import type { CreateSkillDto } from './dto/create-skill.dto.js';
 import type { CreateDependentDto } from './dto/create-dependent.dto.js';
+import type { CreateVoluntaryWorkDto } from './dto/create-voluntary-work.dto.js';
+import type { CreateDistinctionDto } from './dto/create-distinction.dto.js';
+import type { CreateOrgMembershipDto } from './dto/create-org-membership.dto.js';
 
 @Injectable()
 export class PersonnelRecordsService {
@@ -87,5 +90,44 @@ export class PersonnelRecordsService {
 
   deleteDependent(employeeId: string, id: string) {
     return this.prisma.dependent.delete({ where: { id, employeeId } });
+  }
+
+  // --- Voluntary work ------------------------------------------------------
+  findVoluntaryWork(employeeId: string) {
+    return this.prisma.employeeVoluntaryWork.findMany({ where: { employeeId }, orderBy: { startDate: 'desc' } });
+  }
+
+  createVoluntaryWork(employeeId: string, dto: CreateVoluntaryWorkDto) {
+    return this.prisma.employeeVoluntaryWork.create({ data: { employeeId, ...dto } });
+  }
+
+  deleteVoluntaryWork(employeeId: string, id: string) {
+    return this.prisma.employeeVoluntaryWork.delete({ where: { id, employeeId } });
+  }
+
+  // --- Non-academic distinctions --------------------------------------------
+  findDistinctions(employeeId: string) {
+    return this.prisma.employeeDistinction.findMany({ where: { employeeId }, orderBy: { createdAt: 'asc' } });
+  }
+
+  createDistinction(employeeId: string, dto: CreateDistinctionDto) {
+    return this.prisma.employeeDistinction.create({ data: { employeeId, ...dto } });
+  }
+
+  deleteDistinction(employeeId: string, id: string) {
+    return this.prisma.employeeDistinction.delete({ where: { id, employeeId } });
+  }
+
+  // --- Association/organization memberships ---------------------------------
+  findOrgMemberships(employeeId: string) {
+    return this.prisma.employeeOrgMembership.findMany({ where: { employeeId }, orderBy: { createdAt: 'asc' } });
+  }
+
+  createOrgMembership(employeeId: string, dto: CreateOrgMembershipDto) {
+    return this.prisma.employeeOrgMembership.create({ data: { employeeId, ...dto } });
+  }
+
+  deleteOrgMembership(employeeId: string, id: string) {
+    return this.prisma.employeeOrgMembership.delete({ where: { id, employeeId } });
   }
 }
