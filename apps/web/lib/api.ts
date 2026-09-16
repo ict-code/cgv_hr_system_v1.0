@@ -1,5 +1,27 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+/**
+ * `crypto.randomUUID()` only exists in secure contexts (HTTPS, or
+ * localhost) — this app is currently served over plain HTTP on a LAN IP
+ * (no TLS yet), where it's simply undefined. `crypto.getRandomValues` has
+ * no such restriction, so build a real UUID v4 from that instead; the
+ * Math.random fallback only matters for a `crypto`-less environment, which
+ * shouldn't happen in a browser but keeps this from throwing either way.
+ */
+export function generateIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
     ...init,

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiFetch, apiFetchAll } from "@/lib/api";
+import { apiFetch, apiFetchAll, generateIdempotencyKey } from "@/lib/api";
 import type { Department, Employee } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,7 +43,7 @@ export default function NewEmployeePage() {
   // resubmits the same key (server replays the original result instead of
   // creating a second employee); navigating here again for a genuinely new
   // employee remounts the page and gets a fresh key.
-  const idempotencyKey = useRef(crypto.randomUUID());
+  const idempotencyKey = useRef(generateIdempotencyKey());
 
   const createEmployee = useMutation({
     mutationFn: (values: EmployeeForm) =>

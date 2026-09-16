@@ -7,7 +7,7 @@ import Link from "next/link";
 import { use, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { apiDownload, apiFetch, apiFetchAll } from "@/lib/api";
+import { apiDownload, apiFetch, apiFetchAll, generateIdempotencyKey } from "@/lib/api";
 import {
   downloadServiceRecordTemplate,
   parseFlexibleDate,
@@ -385,7 +385,7 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
   // replays the original result instead of recording the change twice); a
   // fresh key is minted after each success so the next, distinct change for
   // this employee isn't mistaken for a resubmit of the last one.
-  const recordChangeKey = useRef(crypto.randomUUID());
+  const recordChangeKey = useRef(generateIdempotencyKey());
 
   const recordChange = useMutation({
     mutationFn: (values: ChangeForm) =>
@@ -405,7 +405,7 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees", id] });
       reset();
-      recordChangeKey.current = crypto.randomUUID();
+      recordChangeKey.current = generateIdempotencyKey();
     },
   });
 
