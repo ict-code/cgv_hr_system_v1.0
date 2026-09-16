@@ -18,6 +18,11 @@ function createFakePrisma() {
     appointments: new Map<string, FakeRow>(),
     changeLogs: [] as FakeRow[],
     serviceRecords: new Map<string, FakeRow>(),
+    appointmentStatusCodes: new Map<string, FakeRow>([
+      // Mirrors the real seed (packages/db/prisma/migrations/…_appointment_status_mode):
+      // RS/RT/DT/TO are EXIT, everything else here is a lateral change (no mode).
+      ['RS', { code: 'RS', description: 'Resigned', mode: 'EXIT' }],
+    ]),
   };
   let nextId = 1;
   const id = () => `id-${nextId++}`;
@@ -63,6 +68,16 @@ function createFakePrisma() {
       create: async ({ data }: any) => {
         const row = { id: id(), endDate: null, ...data };
         state.serviceRecords.set(row.id, row);
+        return row;
+      },
+    },
+    appointmentStatusCode: {
+      findUnique: async ({ where }: any) => state.appointmentStatusCodes.get(where.code) ?? null,
+    },
+    employee: {
+      update: async ({ where, data }: any) => {
+        const row = { ...state.employees.get(where.id), ...data };
+        state.employees.set(where.id, row);
         return row;
       },
     },

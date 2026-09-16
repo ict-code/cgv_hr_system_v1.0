@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiFetch, apiFetchAll } from "@/lib/api";
@@ -38,10 +39,17 @@ export default function NewEmployeePage() {
     formState: { errors, isSubmitting },
   } = useForm<EmployeeForm>({ resolver: zodResolver(employeeSchema) });
 
+  // One key per mount of this form — a double-click/retry on the same form
+  // resubmits the same key (server replays the original result instead of
+  // creating a second employee); navigating here again for a genuinely new
+  // employee remounts the page and gets a fresh key.
+  const idempotencyKey = useRef(crypto.randomUUID());
+
   const createEmployee = useMutation({
     mutationFn: (values: EmployeeForm) =>
       apiFetch<Employee>("/employees", {
         method: "POST",
+        headers: { "Idempotency-Key": idempotencyKey.current },
         body: JSON.stringify({
           ...values,
           departmentId: values.departmentId || undefined,

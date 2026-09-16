@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { IdempotencyInterceptor } from './common/idempotency/idempotency.interceptor.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { HealthController } from './health/health.controller.js';
 import { EmployeesModule } from './employees/employees.module.js';
@@ -43,5 +45,6 @@ import { PdsExportModule } from './pds-export/pds-export.module.js';
     PdsExportModule,
   ],
   controllers: [HealthController],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor }],
 })
 export class AppModule {}

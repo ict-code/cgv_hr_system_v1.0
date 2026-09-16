@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma } from '@egaps/db';
+import { Prisma } from '@egaps/db';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { CreateEmployeeDto } from './dto/create-employee.dto.js';
 import type { UpdateEmployeeDto } from './dto/update-employee.dto.js';
@@ -98,7 +98,16 @@ export class EmployeesService {
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
-    await this.findOne(id);
-    return this.prisma.employee.update({ where: { id }, data: dto });
+    // findOne() pulls 12 relations for the detail page — far more than an
+    // existence check needs. Just attempt the update and translate Prisma's
+    // "no row" error, instead of paying for that full fetch on every save.
+    try {
+      return await this.prisma.employee.update({ where: { id }, data: dto });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+        throw new NotFoundException(`Employee ${id} not found`);
+      }
+      throw err;
+    }
   }
 }

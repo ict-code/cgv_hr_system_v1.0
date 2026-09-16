@@ -1,11 +1,13 @@
-import ExcelJS from "exceljs";
-
 export async function exportRowsToExcel(opts: {
   filename: string;
   sheetName: string;
   columns: { header: string; key: string; width?: number }[];
   rows: Record<string, unknown>[];
 }) {
+  // Dynamic import: ExcelJS is a large library that every page importing this
+  // module would otherwise ship in its initial bundle just to have an Export
+  // button. Loaded on demand, only when export actually runs.
+  const { default: ExcelJS } = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(opts.sheetName.slice(0, 31)); // Excel sheet name limit
   sheet.columns = opts.columns.map((c) => ({ header: c.header, key: c.key, width: c.width ?? 24 }));

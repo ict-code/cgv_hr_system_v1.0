@@ -752,6 +752,7 @@ model User {
   roles     UserRole[]
   auditLogs AuditLog[]
   appointmentChanges AppointmentChangeLog[]
+  idempotencyKeys    IdempotencyKey[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -824,4 +825,29 @@ model AuditLog {
   @@index([module, createdAt])
   @@index([userId, createdAt])
   @@map("audit_logs")
+}
+
+/// Backs the global Idempotency-Key interceptor (apps/api/src/common/idempotency).
+/// A client resubmitting the same POST/PUT/PATCH with the same key+method+path
+/// gets the original stored response replayed instead of re-running the
+/// handler — protects against double-click/retry duplicate records. Rows are
+/// never pruned automatically; harmless at this app's write volume, but a
+/// cleanup job keyed on createdAt would be a reasonable follow-up.
+model IdempotencyKey {
+  id     String @id @default(cuid())
+  key    String
+  method String
+  path   String
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  statusCode   Int
+  responseBody Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([key, method, path])
+  @@index([createdAt])
+  @@map("idempotency_keys")
 }

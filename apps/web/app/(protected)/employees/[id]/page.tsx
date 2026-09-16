@@ -381,10 +381,17 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
     formState: { errors, isSubmitting },
   } = useForm<ChangeForm>({ resolver: zodResolver(changeSchema) });
 
+  // Same key survives repeated submits of one pending change (a double-click
+  // replays the original result instead of recording the change twice); a
+  // fresh key is minted after each success so the next, distinct change for
+  // this employee isn't mistaken for a resubmit of the last one.
+  const recordChangeKey = useRef(crypto.randomUUID());
+
   const recordChange = useMutation({
     mutationFn: (values: ChangeForm) =>
       apiFetch(`/employees/${id}/appointments`, {
         method: "POST",
+        headers: { "Idempotency-Key": recordChangeKey.current },
         body: JSON.stringify({
           ...values,
           departmentId: values.departmentId || undefined,
@@ -398,6 +405,7 @@ function OverviewTab({ employee }: { employee: EmployeeDetail }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees", id] });
       reset();
+      recordChangeKey.current = crypto.randomUUID();
     },
   });
 

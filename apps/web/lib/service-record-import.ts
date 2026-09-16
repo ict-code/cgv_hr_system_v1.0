@@ -1,4 +1,7 @@
-import ExcelJS from "exceljs";
+// Type-only import: the runtime module is loaded dynamically inside each
+// function below so pages that only download/parse a template on demand
+// don't ship ExcelJS in their initial bundle.
+import type ExcelJS from "exceljs";
 import type { Department, EmploymentStatusCode, Position } from "@/lib/types";
 
 // Column order for both the generated .xlsx template and the uploaded-file
@@ -79,7 +82,8 @@ export async function downloadServiceRecordTemplate(masters: {
 }) {
   const columns = getColumns(!!masters.includeEmpNo);
 
-  const workbook = new ExcelJS.Workbook();
+  const { default: ExcelJSRuntime } = await import("exceljs");
+  const workbook = new ExcelJSRuntime.Workbook();
   const sheet = workbook.addWorksheet("Service Record");
   const lists = workbook.addWorksheet("Lists");
   lists.state = "veryHidden";
@@ -231,7 +235,8 @@ export async function parseServiceRecordWorkbook(
   const columns = getColumns(includeEmpNo);
 
   const buffer = await file.arrayBuffer();
-  const workbook = new ExcelJS.Workbook();
+  const { default: ExcelJSRuntime } = await import("exceljs");
+  const workbook = new ExcelJSRuntime.Workbook();
   await workbook.xlsx.load(buffer);
   const sheet = workbook.worksheets[0];
 
