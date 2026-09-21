@@ -21,6 +21,7 @@ import { EmploymentStatusesModule } from './employment-statuses/employment-statu
 import { ServiceRecordExportModule } from './service-record-export/service-record-export.module.js';
 import { ServiceRecordsModule } from './service-records/service-records.module.js';
 import { PdsExportModule } from './pds-export/pds-export.module.js';
+import { BrandingModule } from './branding/branding.module.js';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { PdsExportModule } from './pds-export/pds-export.module.js';
     ServiceRecordExportModule,
     ServiceRecordsModule,
     PdsExportModule,
+    BrandingModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_INTERCEPTOR, useClass: IdempotencyInterceptor }],

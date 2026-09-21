@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBranding } from "@/hooks/use-branding";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 function initials(name: string): string {
@@ -13,6 +13,7 @@ function initials(name: string): string {
 export function Topbar() {
   const router = useRouter();
   const { data: user } = useCurrentUser();
+  const branding = useBranding();
 
   async function handleLogout() {
     await fetch("/auth/logout", { method: "POST" });
@@ -24,10 +25,11 @@ export function Topbar() {
     <header className="flex h-14 shrink-0 items-center border-b border-emerald-900 bg-[#04271d] px-6">
       <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <Image src="/vigan-seal.png" alt="City of Vigan seal" width={36} height={36} className="h-9 w-9" priority />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={branding.logoSrc} alt="Logo" width={36} height={36} className="h-9 w-9 object-contain" />
           <div>
-            <p className="text-sm font-semibold leading-tight text-foreground">CGV - HRAS</p>
-            <p className="text-xs leading-tight text-[var(--color-muted)]">City Government of Vigan</p>
+            <p className="text-sm font-semibold leading-tight text-white">{branding.title}</p>
+            <p className="text-xs leading-tight text-emerald-400">{branding.subtitle}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

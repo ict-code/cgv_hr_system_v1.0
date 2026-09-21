@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
@@ -10,7 +11,9 @@ import { AppModule } from './app.module.js';
 // Re-add once a compatible @nestjs/swagger version is available.
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Logo upload is a base64 JSON body (~1MB image) — over express's 100kb default.
+  app.useBodyParser('json', { limit: '2mb' });
 
   app.use(cookieParser());
 

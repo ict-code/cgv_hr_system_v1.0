@@ -4,7 +4,6 @@ import {
   Bell,
   Bookmark,
   Briefcase,
-  Building2,
   CalendarClock,
   CalendarDays,
   ClipboardList,
@@ -20,6 +19,7 @@ import {
   ListChecks,
   MapPin,
   MapPinned,
+  Palette,
   Percent,
   Search,
   Settings,
@@ -160,6 +160,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Users", href: "/users", icon: UserCog, requiredPermission: "users:view" },
       { label: "Roles", href: "/roles", icon: ShieldCheck, requiredPermission: "roles:view" },
+      { label: "Branding", href: "/branding", icon: Palette, requiredPermission: "branding:edit" },
     ],
   },
 ];

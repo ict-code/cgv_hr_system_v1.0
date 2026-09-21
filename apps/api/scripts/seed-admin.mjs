@@ -33,6 +33,7 @@ const PERMISSION_CATALOG = [
   ['employmentStatuses', 'create'],
   ['employmentStatuses', 'edit'],
   ['employmentStatuses', 'delete'],
+  ['branding', 'edit'],
 ];
 
 const HR_STAFF_PERMISSIONS = new Set([

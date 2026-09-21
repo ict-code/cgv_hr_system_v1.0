@@ -851,3 +851,17 @@ model IdempotencyKey {
   @@index([createdAt])
   @@map("idempotency_keys")
 }
+
+/// Single-row (id = 'default') app branding: top-bar title/subtitle and the
+/// uploaded logo, editable from Administration > Branding instead of hardcoded.
+model AppBranding {
+  id       String  @id @default("default")
+  title    String
+  subtitle String
+  logoData Bytes?
+  logoMime String?
+
+  updatedAt DateTime @updatedAt
+
+  @@map("app_branding")
+}
