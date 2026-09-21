@@ -24,4 +24,11 @@ export class ListEmployeesDto extends ListQueryDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.split(',').filter(Boolean) : value))
   @IsString({ each: true })
   employmentStatus?: string[];
+
+  // Comma-separated codes — excludes employees whose CURRENT appointment's
+  // employmentStatus is one of these (employees with no appointment stay in).
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.split(',').filter(Boolean) : value))
+  @IsString({ each: true })
+  notEmploymentStatus?: string[];
 }

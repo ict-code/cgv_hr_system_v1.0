@@ -18,18 +18,21 @@ export class EmployeesService {
     // ANY historical status, not necessarily the current one. Instead:
     // find each employee's true latest appointment (by effectDate) first,
     // then check whether THAT ONE has a matching employmentStatus.
-    let employmentStatusEmployeeIds: string[] | undefined;
-    if (query.employmentStatus?.length) {
+    const latestWithStatus = async (statuses: string[]) => {
       const latest = await this.prisma.$queryRaw<{ employeeId: string }[]>`
         SELECT "employeeId" FROM (
           SELECT DISTINCT ON (a."employeeId") a."employeeId", a."employmentStatus"
           FROM appointments a
           ORDER BY a."employeeId", a."effectDate" DESC NULLS LAST
         ) latest
-        WHERE latest."employmentStatus" = ANY(${query.employmentStatus})
+        WHERE latest."employmentStatus" = ANY(${statuses})
       `;
-      employmentStatusEmployeeIds = latest.map((r) => r.employeeId);
-    }
+      return latest.map((r) => r.employeeId);
+    };
+    const [employmentStatusEmployeeIds, excludedEmployeeIds] = await Promise.all([
+      query.employmentStatus?.length ? latestWithStatus(query.employmentStatus) : undefined,
+      query.notEmploymentStatus?.length ? latestWithStatus(query.notEmploymentStatus) : undefined,
+    ]);
 
     const where: Prisma.EmployeeWhereInput = {
       ...(query.search
@@ -45,7 +48,14 @@ export class EmployeesService {
       ...(query.departmentId ? { departmentId: query.departmentId } : {}),
       ...(query.inactive !== undefined ? { inactive: query.inactive } : {}),
       ...(query.withoutPlantilla ? { plantillaItems: { none: {} } } : {}),
-      ...(employmentStatusEmployeeIds ? { id: { in: employmentStatusEmployeeIds } } : {}),
+      ...(employmentStatusEmployeeIds || excludedEmployeeIds
+        ? {
+            id: {
+              ...(employmentStatusEmployeeIds ? { in: employmentStatusEmployeeIds } : {}),
+              ...(excludedEmployeeIds ? { notIn: excludedEmployeeIds } : {}),
+            },
+          }
+        : {}),
     };
 
     const [data, total] = await Promise.all([

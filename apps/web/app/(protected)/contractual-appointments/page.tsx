@@ -299,7 +299,7 @@ export default function ContractualAppointmentsPage() {
         <form onSubmit={handleSubmit((values) => save.mutate(values))} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <Label>Employee</Label>
-            <EmployeePicker value={dialogEmployee} onChange={setDialogEmployee} />
+            <EmployeePicker value={dialogEmployee} onChange={setDialogEmployee} excludeEmploymentStatus={CONTRACTUAL_STATUSES.join(",")} />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
