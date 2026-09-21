@@ -13,6 +13,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableCard } from "@/components/ui/table-card";
+import { NewEmployeeDialog } from "@/components/new-employee-dialog";
 
 const PAGE_SIZE = 20;
 
@@ -23,6 +24,7 @@ export default function EmployeesPage() {
   const [activeFilter, setActiveFilter] = useState<"active" | "inactive">("active");
   const [page, setPage] = useState(1);
   const [exporting, setExporting] = useState(false);
+  const [newOpen, setNewOpen] = useState(false);
 
   const departments = useQuery({
     queryKey: ["/departments"],
@@ -133,12 +135,10 @@ export default function EmployeesPage() {
             <Download className="h-3.5 w-3.5" />
             {exporting ? "Exporting…" : "Export"}
           </Button>
-          <Link href="/employees/new">
-            <Button size="sm">
-              <Plus className="h-3.5 w-3.5" />
-              New employee
-            </Button>
-          </Link>
+          <Button size="sm" onClick={() => setNewOpen(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            New employee
+          </Button>
         </div>
       }
     >
@@ -195,6 +195,7 @@ export default function EmployeesPage() {
       </Table>
       <Pagination page={page} pageCount={pageCount} totalItems={total} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableCard>
+      <NewEmployeeDialog open={newOpen} onClose={() => setNewOpen(false)} />
     </div>
   );
 }
