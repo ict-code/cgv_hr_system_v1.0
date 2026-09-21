@@ -3,5 +3,5 @@ import { redirect } from "next/navigation";
 
 export default async function Home() {
   const cookieStore = await cookies();
-  redirect(cookieStore.has("egaps_token") ? "/dashboard" : "/login");
+  redirect(cookieStore.has("egaps_token") ? "/pmis/dashboard" : "/login");
 }

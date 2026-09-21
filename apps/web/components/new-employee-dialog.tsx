@@ -56,7 +56,7 @@ function NewEmployeeForm() {
         }),
       }),
     onSuccess: (employee) => {
-      router.push(`/employees/${employee.id}`);
+      router.push(`/pmis/employees/${employee.id}`);
     },
   });
 

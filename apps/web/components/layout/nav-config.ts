@@ -50,14 +50,14 @@ export interface NavSection {
 // point here instead of a 404 — the nav shell mirrors the legacy taxonomy in
 // full even though most of it isn't built out yet.
 function soon(title: string, section: string): string {
-  return `/coming-soon?title=${encodeURIComponent(title)}&section=${encodeURIComponent(section)}`;
+  return `/pmis/coming-soon?title=${encodeURIComponent(title)}&section=${encodeURIComponent(section)}`;
 }
 
 export const NAV_SECTIONS: NavSection[] = [
   {
     title: null,
     icon: LayoutDashboard,
-    items: [{ label: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+    items: [{ label: "Dashboard", href: "/pmis/dashboard", icon: LayoutDashboard }],
   },
   {
     title: "Personnel File",
@@ -66,8 +66,8 @@ export const NAV_SECTIONS: NavSection[] = [
       // Family Background / Educational Background / Eligibility / Work
       // Experience / Training are tabs on the employee detail page now
       // (reached from here), not separate nav entries.
-      { label: "Personal Data Sheet Records", href: "/employees", icon: UserRound },
-      { label: "Import Service Records", href: "/service-records/import", icon: Upload },
+      { label: "Personal Data Sheet Records", href: "/pmis/employees", icon: UserRound },
+      { label: "Import Service Records", href: "/pmis/service-records/import", icon: Upload },
       { label: "Update Employment Status Process", href: soon("Update Employment Status Process", "Personnel File"), icon: UserCog },
     ],
   },
@@ -75,12 +75,12 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Plantilla & Appointments File",
     icon: ClipboardList,
     items: [
-      { label: "Plantilla Positions File", href: "/plantilla", icon: ClipboardList },
-      { label: "Plantilla Appointment — Regular/Elected", href: "/plantilla-appointments", icon: FileText },
+      { label: "Plantilla Positions File", href: "/pmis/plantilla", icon: ClipboardList },
+      { label: "Plantilla Appointment — Regular/Elected", href: "/pmis/plantilla-appointments", icon: FileText },
       { label: "Consultant/Honorary Appointment File", href: soon("Consultant/Honorary Appointment File", "Plantilla & Appointments File"), icon: IdCard },
       { label: "Setup Employment Period", href: soon("Setup Employment Period", "Plantilla & Appointments File — Casual/Job Order"), icon: CalendarClock },
-      { label: "Casual Plantilla Appointment File", href: "/casual-appointments", icon: FileText },
-      { label: "Contractual Appointment File", href: "/contractual-appointments", icon: FileText },
+      { label: "Casual Plantilla Appointment File", href: "/pmis/casual-appointments", icon: FileText },
+      { label: "Contractual Appointment File", href: "/pmis/contractual-appointments", icon: FileText },
     ],
   },
   {
@@ -134,11 +134,11 @@ export const NAV_SECTIONS: NavSection[] = [
     icon: Database,
     items: [
       { label: "System Parameter", href: soon("System Parameter", "Master Data"), icon: Settings },
-      { label: "Offices File", href: "/departments", icon: Landmark },
-      { label: "Positions File", href: "/positions", icon: Briefcase },
-      { label: "Employment Status File", href: "/employment-statuses", icon: UserCog },
-      { label: "Appointment Status File", href: "/appointment-statuses", icon: FileText },
-      { label: "Salary Grade File", href: "/salary-grades", icon: Banknote },
+      { label: "Offices File", href: "/pmis/departments", icon: Landmark },
+      { label: "Positions File", href: "/pmis/positions", icon: Briefcase },
+      { label: "Employment Status File", href: "/pmis/employment-statuses", icon: UserCog },
+      { label: "Appointment Status File", href: "/pmis/appointment-statuses", icon: FileText },
+      { label: "Salary Grade File", href: "/pmis/salary-grades", icon: Banknote },
       { label: "Work Assignments File", href: soon("Work Assignments File", "Master Data"), icon: Briefcase },
       { label: "Job Description File", href: soon("Job Description File", "Master Data"), icon: FileText },
       { label: "College Courses File", href: soon("College Courses File", "Master Data"), icon: GraduationCap },
@@ -158,9 +158,9 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Administration",
     icon: ShieldCheck,
     items: [
-      { label: "Users", href: "/users", icon: UserCog, requiredPermission: "users:view" },
-      { label: "Roles", href: "/roles", icon: ShieldCheck, requiredPermission: "roles:view" },
-      { label: "Branding", href: "/branding", icon: Palette, requiredPermission: "branding:edit" },
+      { label: "Users", href: "/pmis/users", icon: UserCog, requiredPermission: "users:view" },
+      { label: "Roles", href: "/pmis/roles", icon: ShieldCheck, requiredPermission: "roles:view" },
+      { label: "Branding", href: "/pmis/branding", icon: Palette, requiredPermission: "branding:edit" },
     ],
   },
 ];

@@ -105,7 +105,7 @@ export default function EmployeeDetailPage({ params }: { params: Promise<{ id: s
     <div className="flex flex-col gap-4">
       <div className="print:hidden">
         <Link
-          href="/employees"
+          href="/pmis/employees"
           className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--color-muted)] hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />

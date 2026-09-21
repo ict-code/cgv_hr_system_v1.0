@@ -79,23 +79,23 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <StatCard label="Employees" href="/employees" icon={UserRound} count={employees.data} />
-        <StatCard label="Departments" href="/departments" icon={Building2} count={departments.data} />
-        <StatCard label="Positions" href="/positions" icon={Briefcase} count={positions.data} />
-        <StatCard label="Plantilla Items" href="/plantilla" icon={ClipboardList} count={plantilla.data} />
-        <StatCard label="Appointment Statuses" href="/appointment-statuses" icon={FileText} count={appointmentStatuses.data} />
-        <StatCard label="Roles" href="/roles" icon={ShieldCheck} count={roles.data} />
+        <StatCard label="Employees" href="/pmis/employees" icon={UserRound} count={employees.data} />
+        <StatCard label="Departments" href="/pmis/departments" icon={Building2} count={departments.data} />
+        <StatCard label="Positions" href="/pmis/positions" icon={Briefcase} count={positions.data} />
+        <StatCard label="Plantilla Items" href="/pmis/plantilla" icon={ClipboardList} count={plantilla.data} />
+        <StatCard label="Appointment Statuses" href="/pmis/appointment-statuses" icon={FileText} count={appointmentStatuses.data} />
+        <StatCard label="Roles" href="/pmis/roles" icon={ShieldCheck} count={roles.data} />
       </div>
 
       <div>
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--color-muted)]">Quick links</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <QuickLink label="Personal Data Sheet Records" description="Browse and manage employees" href="/employees" icon={UserRound} />
-          <QuickLink label="Plantilla Positions File" description="Item numbers, salary and grade" href="/plantilla" icon={ClipboardList} />
-          <QuickLink label="Salary Grade File" description="Salary schedules and step rates" href="/salary-grades" icon={Banknote} />
-          <QuickLink label="Offices File" description="Departments and offices" href="/departments" icon={Building2} />
-          <QuickLink label="Positions File" description="Plantilla position titles" href="/positions" icon={Briefcase} />
-          <QuickLink label="Appointment Status File" description="Appointment status codes" href="/appointment-statuses" icon={FileText} />
+          <QuickLink label="Personal Data Sheet Records" description="Browse and manage employees" href="/pmis/employees" icon={UserRound} />
+          <QuickLink label="Plantilla Positions File" description="Item numbers, salary and grade" href="/pmis/plantilla" icon={ClipboardList} />
+          <QuickLink label="Salary Grade File" description="Salary schedules and step rates" href="/pmis/salary-grades" icon={Banknote} />
+          <QuickLink label="Offices File" description="Departments and offices" href="/pmis/departments" icon={Building2} />
+          <QuickLink label="Positions File" description="Plantilla position titles" href="/pmis/positions" icon={Briefcase} />
+          <QuickLink label="Appointment Status File" description="Appointment status codes" href="/pmis/appointment-statuses" icon={FileText} />
         </div>
       </div>
     </div>

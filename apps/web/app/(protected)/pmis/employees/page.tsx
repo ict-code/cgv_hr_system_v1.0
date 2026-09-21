@@ -176,12 +176,12 @@ export default function EmployeesPage() {
           {rows.map((e) => (
             <TableRow key={e.id} className="cursor-pointer">
               <TableCell>
-                <Link href={`/employees/${e.id}`} className="block text-brand-600 hover:underline">
+                <Link href={`/pmis/employees/${e.id}`} className="block text-brand-600 hover:underline">
                   {e.idNo || e.biometricId || e.empNo}
                 </Link>
               </TableCell>
               <TableCell>
-                <Link href={`/employees/${e.id}`} className="block">
+                <Link href={`/pmis/employees/${e.id}`} className="block">
                   {e.lastName}, {e.firstName}
                 </Link>
               </TableCell>

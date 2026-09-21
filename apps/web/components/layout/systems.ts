@@ -19,8 +19,8 @@ export const SYSTEMS: AppSystem[] = [
     title: "PMIS",
     subtitle: "Personnel Management and Information System",
     icon: Users,
-    href: "/dashboard",
-    prefixes: [],
+    href: "/pmis/dashboard",
+    prefixes: ["/pmis"],
   },
   {
     id: "alms",
