@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { apiFetch, apiFetchAll, generateIdempotencyKey } from "@/lib/api";
 import {
   PAY_MODE_LABELS,
@@ -13,7 +13,6 @@ import {
   type Department,
   type Employee,
   type EmploymentStatusCode,
-  type PaginatedResult,
   type Plantilla,
 } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
@@ -48,12 +47,6 @@ function AddForm({ defaultDepartmentId, onCreated }: Omit<Props, "open" | "onClo
   const [departmentId, setDepartmentId] = useState(defaultDepartmentId ?? "");
   const [plantillaId, setPlantillaId] = useState("");
   const [employeeId, setEmployeeId] = useState("");
-  const [empSearch, setEmpSearch] = useState("");
-  const [debouncedEmpSearch, setDebouncedEmpSearch] = useState("");
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedEmpSearch(empSearch.trim()), 300);
-    return () => clearTimeout(timer);
-  }, [empSearch]);
   const [f, setF] = useState({
     status: "",
     effectDate: "",
@@ -86,13 +79,12 @@ function AddForm({ defaultDepartmentId, onCreated }: Omit<Props, "open" | "onClo
     staleTime: 0,
   });
 
+  // Active employees who don't already hold a plantilla item (the server
+  // rejects anyone who does, so they're left out of the list up front).
   const employees = useQuery({
-    queryKey: ["/employees", "appoint-picker", debouncedEmpSearch],
-    queryFn: () =>
-      apiFetch<PaginatedResult<Employee>>(
-        `/employees?inactive=false&pageSize=20&search=${encodeURIComponent(debouncedEmpSearch)}`,
-      ),
-    enabled: debouncedEmpSearch.length >= 2,
+    queryKey: ["/employees", "appoint-picker"],
+    queryFn: () => apiFetchAll<Employee>("/employees?inactive=false&withoutPlantilla=true"),
+    staleTime: 0,
   });
 
   const selected = vacant.data?.find((p) => p.id === plantillaId);
@@ -170,29 +162,12 @@ function AddForm({ defaultDepartmentId, onCreated }: Omit<Props, "open" | "onClo
         </p>
       )}
 
-      <Field id="ap-empSearch" label="Find employee (name or ID)">
-        <Input
-          id="ap-empSearch"
-          placeholder="Type at least 2 characters"
-          value={empSearch}
-          onChange={(e) => {
-            setEmpSearch(e.target.value);
-            setEmployeeId("");
-          }}
-        />
-      </Field>
-      <Field id="ap-employee" label="Employee (from Personnel File)">
+      <Field id="ap-employee" label="Employee">
         <Select id="ap-employee" required value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
           <option value="">
-            {debouncedEmpSearch.length < 2
-              ? "Search first"
-              : employees.isLoading
-                ? "Loading…"
-                : employees.data?.data.length
-                  ? "—"
-                  : "No matching employees"}
+            {employees.isLoading ? "Loading…" : employees.data?.length ? "—" : "No employees available"}
           </option>
-          {employees.data?.data.map((emp) => (
+          {employees.data?.map((emp) => (
             <option key={emp.id} value={emp.id}>
               {emp.lastName}, {emp.firstName} — {emp.idNo || emp.biometricId || emp.empNo}
             </option>

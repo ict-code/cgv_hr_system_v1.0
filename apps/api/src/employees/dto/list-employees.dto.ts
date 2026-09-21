@@ -12,6 +12,12 @@ export class ListEmployeesDto extends ListQueryDto {
   @IsBoolean()
   inactive?: boolean;
 
+  // true = only employees not currently the incumbent of any plantilla item.
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  withoutPlantilla?: boolean;
+
   // Comma-separated EmploymentStatusCode codes (e.g. "P,EL,CT") — filters to
   // employees whose current appointment's employmentStatus is one of these.
   @IsOptional()

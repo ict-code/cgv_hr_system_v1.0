@@ -44,6 +44,7 @@ export class EmployeesService {
         : {}),
       ...(query.departmentId ? { departmentId: query.departmentId } : {}),
       ...(query.inactive !== undefined ? { inactive: query.inactive } : {}),
+      ...(query.withoutPlantilla ? { plantillaItems: { none: {} } } : {}),
       ...(employmentStatusEmployeeIds ? { id: { in: employmentStatusEmployeeIds } } : {}),
     };
 
