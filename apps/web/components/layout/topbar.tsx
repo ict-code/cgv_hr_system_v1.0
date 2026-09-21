@@ -24,7 +24,8 @@ export function Topbar() {
   return (
     <header className="flex h-14 shrink-0 items-center border-b border-emerald-900 bg-[#04271d] px-6">
       <div className="flex w-full items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        {/* Branding lives in the sidebar on md+; shown here only where the sidebar is hidden. */}
+        <div className="flex items-center gap-2.5 md:hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={branding.logoSrc} alt="Logo" width={36} height={36} className="h-9 w-9 object-contain" />
           <div>
@@ -32,7 +33,7 @@ export function Topbar() {
             <p className="text-xs leading-tight text-emerald-400">{branding.subtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3">
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
               {user ? initials(user.fullName) : ""}

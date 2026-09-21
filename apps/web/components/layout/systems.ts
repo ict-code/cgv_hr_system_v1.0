@@ -4,8 +4,8 @@ export type SystemId = "pmis" | "alms" | "gps";
 
 export interface AppSystem {
   id: SystemId;
-  label: string;
-  short: string;
+  title: string;
+  subtitle: string;
   icon: LucideIcon;
   href: string;
   // Route prefixes that belong to this system. PMIS is the fallback for
@@ -16,24 +16,24 @@ export interface AppSystem {
 export const SYSTEMS: AppSystem[] = [
   {
     id: "pmis",
-    label: "Personnel Management and Information System",
-    short: "PMIS",
+    title: "PMIS",
+    subtitle: "Personnel Management and Information System",
     icon: Users,
     href: "/dashboard",
     prefixes: [],
   },
   {
     id: "alms",
-    label: "Attendance and Leaves Monitoring System",
-    short: "ALMS",
+    title: "ALMS",
+    subtitle: "Attendance and Leaves Monitoring System",
     icon: CalendarClock,
     href: "/attendance",
     prefixes: ["/attendance"],
   },
   {
     id: "gps",
-    label: "Government Payroll System",
-    short: "GPS",
+    title: "GPS",
+    subtitle: "Government Payroll System",
     icon: Wallet,
     href: "/payroll",
     prefixes: ["/payroll"],
