@@ -12,7 +12,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
           <SystemNav />
         </div>
         <main className="flex-1 overflow-x-auto px-6 py-4 print:overflow-visible print:p-0">
-          <div className="mx-auto max-w-7xl print:max-w-none">{children}</div>
+          <div className="w-full">{children}</div>
         </main>
       </div>
     </div>
