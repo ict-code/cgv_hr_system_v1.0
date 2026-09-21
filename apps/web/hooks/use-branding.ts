@@ -19,5 +19,5 @@ export function useBranding() {
   const data = query.data;
   // ?v= busts the browser's cache of the logo bytes whenever it's re-uploaded.
   const logoSrc = data?.hasLogo ? `${API_URL}/branding/logo?v=${encodeURIComponent(data.updatedAt ?? "")}` : DEFAULT_LOGO;
-  return { ...query, title: data?.title ?? "CGV - HRAS", subtitle: data?.subtitle ?? "City Government of Vigan", logoSrc };
+  return { ...query, title: data?.title ?? "HRAS", subtitle: data?.subtitle ?? "City Government of Vigan", logoSrc };
 }
