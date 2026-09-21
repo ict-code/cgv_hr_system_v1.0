@@ -28,6 +28,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
+import { AddPlantillaEmployeeDialog } from "@/components/add-plantilla-employee-dialog";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
@@ -63,6 +66,9 @@ export default function PlantillaAppointmentsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const { data: currentUser } = useCurrentUser();
+  const canAdd = !!currentUser?.permissions.includes("personnel:edit") && !!currentUser.permissions.includes("plantilla:edit");
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
@@ -98,10 +104,29 @@ export default function PlantillaAppointmentsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Regular/Elected</h1>
-        <p className="text-sm text-[var(--color-muted)]">Browse by office and record appointment changes.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-foreground">Regular/Elected</h1>
+          <p className="text-sm text-[var(--color-muted)]">Browse by office and record appointment changes.</p>
+        </div>
+        {canAdd && (
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Appoint employee
+          </Button>
+        )}
       </div>
+
+      <AddPlantillaEmployeeDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        defaultDepartmentId={departmentId}
+        onCreated={(id) => {
+          setAddOpen(false);
+          setActiveFilter("active");
+          setSelectedId(id);
+        }}
+      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <Card className="flex flex-col overflow-hidden">
