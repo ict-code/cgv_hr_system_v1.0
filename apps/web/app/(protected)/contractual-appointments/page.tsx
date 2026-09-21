@@ -10,6 +10,7 @@ import { apiFetch, apiFetchAll } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   CONTRACTUAL_STATUSES,
+  REGULAR_ELECTED_STATUSES,
   PAY_MODE_LABELS,
   PAY_MODES,
   type AppointmentStatusCode,
@@ -299,7 +300,7 @@ export default function ContractualAppointmentsPage() {
         <form onSubmit={handleSubmit((values) => save.mutate(values))} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <Label>Employee</Label>
-            <EmployeePicker value={dialogEmployee} onChange={setDialogEmployee} excludeEmploymentStatus={CONTRACTUAL_STATUSES.join(",")} />
+            <EmployeePicker value={dialogEmployee} onChange={setDialogEmployee} excludeEmploymentStatus={[...CONTRACTUAL_STATUSES, ...REGULAR_ELECTED_STATUSES].join(",")} />
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

@@ -7,7 +7,8 @@ import type { Employee } from "@/lib/types";
 import { Select } from "@/components/ui/select";
 
 /**
- * Dropdown of active employees from the Personnel File. `excludeEmploymentStatus`
+ * Dropdown of active employees from the Personnel File who are not already sitting
+ * in a plantilla (permanent) position. `excludeEmploymentStatus`
  * (comma-separated codes) leaves out anyone whose current appointment already
  * has that employment status — they'd be edited from the list, not re-added.
  */
@@ -26,7 +27,7 @@ export function EmployeePicker({
     queryKey: ["/employees", "employee-picker", excludeEmploymentStatus ?? ""],
     queryFn: () =>
       apiFetchAll<Employee>(
-        `/employees?inactive=false${excludeEmploymentStatus ? `&notEmploymentStatus=${excludeEmploymentStatus}` : ""}`,
+        `/employees?inactive=false&withoutPlantilla=true${excludeEmploymentStatus ? `&notEmploymentStatus=${excludeEmploymentStatus}` : ""}`,
       ),
     staleTime: 0,
     enabled: !value || changing,

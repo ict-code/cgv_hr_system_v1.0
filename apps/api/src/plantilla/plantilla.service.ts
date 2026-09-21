@@ -71,6 +71,9 @@ export class PlantillaService {
         where: { employeeId: employee.id },
         orderBy: { effectDate: 'desc' },
       });
+      if (current?.employmentStatus && ['P', 'EL', 'CT'].includes(current.employmentStatus)) {
+        throw new ConflictException('This employee already has a permanent/elected appointment');
+      }
 
       const actualSalary = dto.actualSalary ?? item.actualSalary ?? undefined;
       const data = {

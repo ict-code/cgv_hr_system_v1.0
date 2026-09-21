@@ -83,7 +83,7 @@ function AddForm({ defaultDepartmentId, onCreated }: Omit<Props, "open" | "onClo
   // rejects anyone who does, so they're left out of the list up front).
   const employees = useQuery({
     queryKey: ["/employees", "appoint-picker"],
-    queryFn: () => apiFetchAll<Employee>("/employees?inactive=false&withoutPlantilla=true"),
+    queryFn: () => apiFetchAll<Employee>(`/employees?inactive=false&withoutPlantilla=true&notEmploymentStatus=${REGULAR_ELECTED_STATUSES.join(",")}`),
     staleTime: 0,
   });
 
