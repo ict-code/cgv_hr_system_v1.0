@@ -41,9 +41,11 @@ export function NavBar() {
   })).filter((section) => section.items.length > 0);
 
   return (
-    <nav ref={navRef} className="relative flex h-12 border-b border-[var(--color-border)] bg-white px-6">
-      <div className="flex w-full items-center gap-2">
-        {sections.map((section) => {
+    <nav ref={navRef} className="relative flex min-h-12 border-b border-[var(--color-border)] bg-white px-4">
+      <div className="flex w-full flex-wrap items-center gap-x-1">
+        {sections.map((section, index) => {
+          // Menus for the last few sections open leftward so they stay inside the viewport.
+          const alignRight = index >= sections.length - 3;
           const key = section.title ?? section.items[0].href;
           const active = isSectionActive(section, pathname);
           const Icon = section.icon;
@@ -55,7 +57,7 @@ export function NavBar() {
                 key={key}
                 href={item.href}
                 className={cn(
-                  "flex h-12 items-center gap-2 whitespace-nowrap border-b-2 px-4 text-sm font-medium transition-colors",
+                  "flex h-12 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm font-medium transition-colors",
                   active ? "border-brand-500 text-brand-600" : "border-transparent text-[var(--color-muted)] hover:text-foreground",
                 )}
               >
@@ -72,7 +74,7 @@ export function NavBar() {
                 type="button"
                 onClick={() => setOpenSection(isOpen ? null : key)}
                 className={cn(
-                  "flex h-12 items-center gap-2 whitespace-nowrap border-b-2 px-4 text-sm font-medium transition-colors",
+                  "flex h-12 items-center gap-2 whitespace-nowrap border-b-2 px-3 text-sm font-medium transition-colors",
                   active ? "border-brand-500 text-brand-600" : "border-transparent text-[var(--color-muted)] hover:text-foreground",
                 )}
               >
@@ -81,7 +83,7 @@ export function NavBar() {
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} />
               </button>
               {isOpen && (
-                <div className="absolute left-0 top-full z-20 mt-1 max-h-[75vh] w-80 overflow-y-auto rounded-md border border-[var(--color-border)] bg-white py-1.5 shadow-lg">
+                <div className={cn("absolute top-full z-20 mt-1 max-h-[75vh] w-80 overflow-y-auto rounded-md border border-[var(--color-border)] bg-white py-1.5 shadow-lg", alignRight ? "right-0" : "left-0")}>
                   {section.items.map((item) => {
                     const itemActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
                     const ItemIcon = item.icon;
