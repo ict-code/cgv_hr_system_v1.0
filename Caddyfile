@@ -5,6 +5,20 @@
 		reverse_proxy api:3001
 	}
 
+	# ALMS — routed before the catch-all below. alms-web itself has
+	# Next's basePath set to /alms, so it's proxied unprefixed.
+	handle /alms/api/* {
+		uri strip_prefix /alms/api
+		reverse_proxy alms-api:3011
+	}
+
+	# Both forms: the sidebar links to the bare /alms (no trailing slash),
+	# which "/alms/*" alone does not match.
+	@alms path /alms /alms/*
+	handle @alms {
+		reverse_proxy alms-web:3000
+	}
+
 	handle {
 		reverse_proxy web:3000
 	}

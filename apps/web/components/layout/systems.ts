@@ -27,8 +27,11 @@ export const SYSTEMS: AppSystem[] = [
     title: "ALMS",
     subtitle: "Attendance and Leaves Monitoring System",
     icon: CalendarClock,
-    href: "/attendance",
-    prefixes: ["/attendance"],
+    // A genuinely separate app (own repo/API/DB) served at /alms/* by its
+    // own container — not a route inside this Next app, unlike PMIS's own
+    // entry above. See alms_v1.0 and the /alms/* rules in ../Caddyfile.
+    href: "/alms",
+    prefixes: ["/alms"],
   },
   {
     id: "gps",

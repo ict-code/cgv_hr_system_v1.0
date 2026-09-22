@@ -55,6 +55,70 @@ services:
     expose:
       - "3000"
 
+  # --- ALMS (Attendance and Leaves Monitoring System) -----------------------
+  # Genuinely separate app/database (see alms_v1.0/packages/db/prisma/schema.prisma's
+  # top comment) — its source lives in a sibling repo, checked out on this
+  # server at ../alms-modern (relative to this compose file's own directory,
+  # ~/egaps-modern). Orchestrated from here only because one Caddy owns
+  # port 80; ALMS's code/data stay independent of PMIS's.
+  alms-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${ALMS_POSTGRES_USER:-alms}
+      POSTGRES_PASSWORD: ${ALMS_POSTGRES_PASSWORD:?ALMS_POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${ALMS_POSTGRES_DB:-alms_modern}
+    volumes:
+      - alms_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ALMS_POSTGRES_USER:-alms} -d ${ALMS_POSTGRES_DB:-alms_modern}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    expose:
+      - "5432"
+
+  alms-api:
+    build:
+      context: ../alms-modern
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${ALMS_DATABASE_URL:?ALMS_DATABASE_URL is required}
+      # Same secret as PMIS's own JWT_SECRET above — ALMS verifies the same
+      # login cookie PMIS issues rather than running its own login.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      PMIS_API_URL: http://api:3001
+      NODE_ENV: production
+      PORT: "3011"
+    depends_on:
+      alms-postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    expose:
+      - "3011"
+
+  alms-web:
+    build:
+      context: ../alms-modern
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: /alms/api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on:
+      alms-api:
+        condition: service_healthy
+    expose:
+      - "3000"
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -67,8 +131,11 @@ services:
     depends_on:
       - api
       - web
+      - alms-api
+      - alms-web
 
 volumes:
   postgres_data:
+  alms_postgres_data:
   caddy_data:
   caddy_config:
